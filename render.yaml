@@ -15,8 +15,13 @@ services:
         fromDatabase:
           name: vap-db
           property: connectionString
-      # RENDER_EXTERNAL_HOSTNAME is injected automatically and trusted in settings.
-      # Seed framework data + create an admin after first deploy (see DEPLOY.md).
+      # Superuser created automatically on first deploy from these three vars.
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: admin
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@vap.local
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false   # set this in the Render dashboard before deploying
 
 databases:
   - name: vap-db

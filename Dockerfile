@@ -23,6 +23,8 @@ COPY --from=frontend /app/frontend/dist ./frontend/dist
 # Collect Django admin + DRF static into STATIC_ROOT (no DB needed).
 RUN python manage.py collectstatic --no-input
 
-# Apply migrations, then serve. $PORT is provided by the host (Render).
-CMD python manage.py migrate --no-input && \
-    gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Migrate + seed + create superuser (from env vars) + serve.
+CMD ["./start.sh"]
