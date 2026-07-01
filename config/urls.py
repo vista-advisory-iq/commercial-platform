@@ -42,5 +42,5 @@ class SPAView(View):
 
 # Catch-all SPA fallback — must be last, and must not shadow /api or /admin.
 urlpatterns += [
-    re_path(r"^(?!api/|admin/|static/).*$", SPAView.as_view()),
+    re_path(r"^(?!api/|admin|static/).*$", SPAView.as_view()),
 ]
