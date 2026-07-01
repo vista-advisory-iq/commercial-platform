@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VAP Commercial Platform — Demo Mockup</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --primary:#2563eb;
+    --green-bg:#dcfce7; --green:#166534; --amber-bg:#fef9c3; --amber:#854d0e;
+    --red-bg:#fee2e2; --red:#991b1b; --blue-bg:#dbeafe; --blue:#1e40af; --slate-bg:#f1f5f9; --slate:#475569;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 system-ui,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  a{color:var(--primary);text-decoration:none;cursor:pointer}
+  h1,h2,h3,h4{margin:0}
+  .muted{color:var(--muted)} .small{font-size:12px} .right{text-align:right}
+  header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line)}
+  .bar{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 20px}
+  .brand{font-weight:700;color:var(--primary)}
+  nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
+  nav.tabs button{background:none;border:none;padding:6px 10px;border-radius:7px;color:var(--muted);font:inherit;cursor:pointer}
+  nav.tabs button.active{background:var(--slate-bg);color:var(--ink);font-weight:600}
+  .spacer{flex:1}
+  .iconwrap{position:relative}
+  .iconbtn{position:relative;background:none;border:1px solid var(--line);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:16px}
+  .badgecount{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;border-radius:9px;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  .menu{position:absolute;right:0;top:40px;width:320px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.12);z-index:40;overflow:hidden}
+  .menu .mhd{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid var(--line);font-weight:600}
+  .menu .mitem{display:block;width:100%;text-align:left;border:none;border-bottom:1px solid var(--line);background:none;padding:10px 13px;cursor:pointer;font:inherit}
+  .menu .mitem:hover{background:#f8fafc} .menu .mitem.unread{background:#eff6ff}
+  .role-select{display:flex;align-items:center;gap:7px;background:var(--slate-bg);padding:5px 9px;border-radius:9px}
+  select{font:inherit;border:1px solid var(--line);border-radius:7px;padding:5px 7px;background:#fff}
+  main{max-width:1180px;margin:0 auto;padding:22px 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .card>.hd{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .card>.bd{padding:16px}
+  .grid2{display:grid;grid-template-columns:2fr 3fr;gap:18px} @media(max-width:880px){.grid2{grid-template-columns:1fr}}
+  .badge{display:inline-block;padding:2px 9px;border-radius:7px;font-size:12px;font-weight:600}
+  .b-slate{background:var(--slate-bg);color:var(--slate)} .b-blue{background:var(--blue-bg);color:var(--blue)}
+  .b-amber{background:var(--amber-bg);color:var(--amber)} .b-green{background:var(--green-bg);color:var(--green)} .b-red{background:var(--red-bg);color:var(--red)}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);padding:9px 12px;background:#fafbfc}
+  td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middle}
+  tr.clickable:hover{background:#f8fafc;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font:inherit;cursor:pointer}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.danger{background:#fff;border-color:#fca5a5;color:var(--red)}
+  .btn.sm{padding:4px 9px;font-size:12px} .btn:disabled{opacity:.5;cursor:not-allowed}
+  .pill{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 11px;cursor:pointer;font:inherit}
+  .pill.sm{padding:3px 9px;font-size:12px}
+  .pill.on-green{border-color:#16a34a;background:var(--green-bg);color:var(--green);font-weight:600}
+  .pill.on-amber{border-color:#ca8a04;background:var(--amber-bg);color:var(--amber);font-weight:600}
+  .pill.on-red{border-color:#dc2626;background:var(--red-bg);color:var(--red);font-weight:600}
+  input,textarea,select.fld{font:inherit;border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%;background:#fff}
+  label.f{display:block;font-size:12px;color:var(--muted);margin:0 0 3px}
+  .dtabs{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 0}
+  .dtabs button{border:1px solid var(--line);background:#fff;border-radius:8px 8px 0 0;padding:7px 12px;cursor:pointer;font:inherit;color:var(--muted)}
+  .dtabs button.active{color:var(--ink);font-weight:600}
+  .dl{display:grid;grid-template-columns:170px 1fr;gap:4px 10px} .dl dt{color:var(--muted)} .dl dd{margin:0;font-weight:500}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fafbfc}
+  .stat .k{font-size:11px;color:var(--muted)} .stat .v{font-size:17px;font-weight:700}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .chat-msg{max-width:78%;padding:8px 11px;border-radius:10px;margin:6px 0}
+  .chat-mine{margin-left:auto;background:var(--primary);color:#fff} .chat-them{background:var(--slate-bg)}
+  .note{border-radius:9px;padding:9px 12px;font-size:13px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  .progress{height:8px;border-radius:6px;background:var(--slate-bg);overflow:hidden;width:140px;display:inline-block;vertical-align:middle}
+  .progress>i{display:block;height:100%;background:var(--primary)}
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:18px}
+  .modal{background:#fff;border-radius:14px;width:520px;max-width:100%;max-height:90vh;overflow:auto}
+  .modal .mh{padding:15px 18px;border-bottom:1px solid var(--line);font-weight:600;font-size:16px}
+  .modal .mb{padding:18px} .modal .mf{padding:14px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px} .fgrid .full{grid-column:1/-1}
+  .toast{position:fixed;bottom:20px;right:20px;background:#0f172a;color:#fff;padding:11px 16px;border-radius:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:13px}
+  .err{color:var(--red);font-size:13px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ===========================================================================
+   VAP Commercial Platform — INTERACTIVE DEMO MOCKUP
+   Pure in-memory + localStorage. No backend / no real database.
+   Switch "Viewing as" to see each role. Actions are wired and persist locally.
+   =========================================================================== */
+
+const ROLES = {
+  BD:{label:'Business Developer',person:'Jane (You)'}, ANALYST:{label:'Analyst',person:'Sam Analyst'},
+  MANAGER:{label:'Manager',person:'Morgan Manager'}, IC_MEMBER:{label:'IC Member',person:'Ivy Committee'},
+  ADMIN:{label:'Admin',person:'Admin'},
+};
+const ASSESSORS=['ANALYST','MANAGER'];
+const GATES=['Demand / Off-taker','Creditworthy Counterparty','Regulatory Pathway','Commercial Viability','Strategic Alignment'];
+const PILLARS=[
+  {code:'A',name:'Commercial Viability',weight:25,subs:['Counterparty Credit','Tariff Competitiveness','Contract Strength','Demand Certainty','Guaranteed Offtake']},
+  {code:'B',name:'Technical & Operational',weight:25,subs:['Technology Maturity','EPC / Construction','O&M Capability','Site & Interconnection']},
+  {code:'C',name:'Risk & Regulatory',weight:25,subs:['Licensing & Permits','Land Title & Legal','ESG Alignment','Security']},
+  {code:'D',name:'Financial Attractiveness',weight:15,subs:['Equity IRR','Payback Period','EBITDA Margin']},
+  {code:'E',name:'Ability to Fund',weight:10,subs:['Equity Availability','Co-investor Interest','Funding Timeline']},
+];
+const REQUIRED=[['name','Deal name'],['deal_type','Deal type'],['client_name','Client name'],['location','Location'],
+  ['total_project_cost_usd_m','Total cost'],['proposed_tariff_ngn_kwh','Proposed tariff'],['tenor_years','Tenor']];
+const STATE_META={DRAFT:{l:'Draft',c:'b-slate'},SUBMITTED:{l:'Submitted',c:'b-blue'},UNDER_REVIEW:{l:'Under Review',c:'b-amber'},
+  REJECTED_TO_BD:{l:'Returned to BD',c:'b-red'},STAGE1_PASSED:{l:'Stage 1 Passed',c:'b-green'},DECLINED:{l:'Declined',c:'b-slate'},
+  STAGE2_GO:{l:'Stage 2 — GO',c:'b-green'},STAGE2_CONDITIONAL:{l:'Stage 2 — Conditional',c:'b-amber'},STAGE2_NO_GO:{l:'Stage 2 — NO-GO',c:'b-red'}};
+
+const blankGates=(f)=>GATES.map((name,i)=>({n:i+1,name,verdict:f?f[i]:''}));
+const blankPillars=(fn)=>PILLARS.map(p=>({...p,grades:p.subs.map((_,i)=>fn?fn(p.code,i):null)}));
+const intakeOf=(o)=>Object.assign({deal_type:'Greenfield',sub_sector:'Solar PV',client_name:'',location:'',sponsor:'IPP Sponsor',
+  total_project_cost_usd_m:'',installed_capacity:'',proposed_tariff_ngn_kwh:'',tenor_years:15,capital_structure:'70/30 D/E'},o);
+function mkDeal(o){return Object.assign({gates:blankGates(),pillars:blankPillars(),proposal:null,project:null,cost:null,comments:[],
+  stage1:'',stage2:'',stage2_reason:'',rejectReason:'',analyst:'',editReq:null},o);}
+
+function seed(){
+  let n=1; const id=()=>'D-2026-'+String(n++).padStart(4,'0');
+  return [
+    mkDeal({id:id(),name:'Lagos Solar Park',state:'DRAFT',intake:intakeOf({client_name:'Lagos DisCo',location:'Lagos',total_project_cost_usd_m:120,installed_capacity:'50 MW',proposed_tariff_ngn_kwh:62})}),
+    mkDeal({id:id(),name:'Kano Gas-to-Power',state:'SUBMITTED',intake:intakeOf({client_name:'Kano Industrial',location:'Kano',sub_sector:'Gas',total_project_cost_usd_m:210,installed_capacity:'80 MW',proposed_tariff_ngn_kwh:58}),
+      comments:[{role:'ANALYST',body:'Can you confirm the off-taker has a signed LOI? I only see a draft MOU.',t:'2d ago'}]}),
+    mkDeal({id:id(),name:'Abuja Mini-Grid',state:'UNDER_REVIEW',analyst:'Sam Analyst',intake:intakeOf({client_name:'Abuja Rural Co-op',location:'Abuja',sub_sector:'Solar+Storage',total_project_cost_usd_m:45,installed_capacity:'12 MW',proposed_tariff_ngn_kwh:70}),
+      gates:blankGates(['PASS','PASS','','','']),comments:[{role:'BD',body:'Updated the tariff model in the data room — folder 4.',t:'1d ago'}]}),
+    mkDeal({id:id(),name:'Port Harcourt CHP',state:'STAGE1_PASSED',analyst:'Sam Analyst',stage1:'PASSED',intake:intakeOf({client_name:'PH Refinery',location:'Rivers',sub_sector:'CHP',total_project_cost_usd_m:160,installed_capacity:'60 MW',proposed_tariff_ngn_kwh:55}),
+      gates:blankGates(['PASS','PASS','CONDITIONAL','PASS','PASS']),pillars:blankPillars((c)=>({A:5,B:5,C:3,D:5,E:3})[c])}),
+    mkDeal({id:id(),name:'Ibadan Solar C&I',state:'STAGE2_GO',analyst:'Morgan Manager',stage1:'PASSED',stage2:'GO',intake:intakeOf({client_name:'Ibadan Mall Group',location:'Oyo',total_project_cost_usd_m:35,installed_capacity:'9 MW',proposed_tariff_ngn_kwh:64}),
+      gates:blankGates(['PASS','PASS','PASS','PASS','PASS']),pillars:blankPillars(()=>5),
+      proposal:{status:'ACCEPTED',tariff:64,tenor:15,value:35,summary:'Behind-the-meter C&I solar for a mall portfolio.',validity:'2026-08-31',version:1},
+      project:{status:'IN_PROGRESS',health:'AMBER',note:'Awaiting grid interconnection sign-off.',
+        milestones:[{id:'m1',n:'Permits',s:'DONE'},{id:'m2',n:'EPC contract',s:'DONE'},{id:'m3',n:'Construction',s:'IN_PROGRESS'},{id:'m4',n:'Commissioning',s:'PENDING'}],
+        risks:[{id:'r1',k:'RISK',d:'Grid interconnection delay',sev:'HIGH',st:'OPEN'},{id:'r2',k:'ISSUE',d:'FX on imported panels',sev:'MEDIUM',st:'MITIGATING'}]},
+      cost:{capex:[{id:'c1',c:'PV modules',a:14},{id:'c2',c:'EPC',a:11},{id:'c3',c:'Grid connection',a:4}],opex:[{id:'o1',c:'O&M',a:1.2},{id:'o2',c:'Insurance',a:0.4}],revenue:7.5,life:15,debt:70,discount:12}}),
+    mkDeal({id:id(),name:'Enugu Hydro',state:'REJECTED_TO_BD',analyst:'Sam Analyst',rejectReason:'Off-taker creditworthiness not evidenced — please attach 2 years of audited financials.',
+      intake:intakeOf({client_name:'Enugu State',location:'Enugu',sub_sector:'Hydro',total_project_cost_usd_m:90,installed_capacity:'25 MW',proposed_tariff_ngn_kwh:50})}),
+    mkDeal({id:id(),name:'Sokoto Wind Pilot',state:'DECLINED',analyst:'Morgan Manager',stage1:'DECLINED',intake:intakeOf({client_name:'Sokoto Energy',location:'Sokoto',sub_sector:'Wind',total_project_cost_usd_m:75,installed_capacity:'20 MW',proposed_tariff_ngn_kwh:68}),
+      gates:blankGates(['PASS','FAIL','PASS','CONDITIONAL','PASS'])}),
+  ];
+}
+
+/* ---------- state + persistence ---------- */
+const LS='vap_mock_v2';
+function load(){ try{ const r=JSON.parse(localStorage.getItem(LS)); if(r&&r.deals) return r; }catch(e){} return null; }
+function save(){ try{ localStorage.setItem(LS,JSON.stringify({deals:S.deals,notifs:S.notifs,seq:S.seq})); }catch(e){} }
+let S; (function init(){ const r=load(); S={role:'BD',view:'list',navtab:null,dealId:null,tab:null,openMenu:null,modal:null,toast:null,
+  deals:r?r.deals:seed(), notifs:r?r.notifs:[], seq:r?r.seq:100}; })();
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const dealById=id=>S.deals.find(d=>d.id===id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stateBadge=st=>{const m=STATE_META[st]||{l:st,c:'b-slate'};return `<span class="badge ${m.c}">${m.l}</span>`;};
+const can={assess:()=>ASSESSORS.includes(S.role),pipeline:()=>['ANALYST','MANAGER','IC_MEMBER','ADMIN'].includes(S.role),ic:()=>['IC_MEMBER','ADMIN'].includes(S.role)};
+const uid=p=>p+(S.seq++);
+
+function gateOutcome(d){const v=d.gates.map(g=>g.verdict);
+  if(v.some(x=>!x))return{ready:false,text:'Assess all 5 gates to finalize.',tone:'slate'};
+  if(v.includes('FAIL'))return{ready:true,decision:'DECLINED',text:'Outcome: DECLINED — a knockout gate failed.',tone:'red'};
+  if(v.includes('CONDITIONAL'))return{ready:true,decision:'CONDITIONAL',text:'Outcome: advances to Stage 2, flagged CONDITIONAL.',tone:'amber'};
+  return{ready:true,decision:'PASSED',text:'Outcome: advances to Stage 2 — all gates passed.',tone:'green'};}
+function scoreOutcome(d){let total=0,complete=true;d.pillars.forEach(p=>{const g=p.grades;if(g.some(x=>x==null))complete=false;
+  const got=g.filter(x=>x!=null);const pct=got.length?got.reduce((a,b)=>a+b,0)/(g.length*5)*100:0;total+=pct*p.weight/100;});
+  total=Math.round(total*10)/10;let verdict=null;if(complete)verdict=total>=80?'GO':total>=65?'CONDITIONAL':'NO_GO';return{total,complete,verdict};}
+function costOutputs(c){if(!c)return null;const capex=c.capex.reduce((a,b)=>a+(+b.a||0),0),opex=c.opex.reduce((a,b)=>a+(+b.a||0),0);
+  const net=(+c.revenue||0)-opex;const payback=net>0&&capex>0?Math.round(capex/net*100)/100:null;let npv=null,irr=null;
+  if(c.life&&capex>0){const flows=[-capex].concat(Array(+c.life).fill(net));if(c.discount!=null){const r=c.discount/100;npv=Math.round(flows.reduce((s,cf,t)=>s+cf/Math.pow(1+r,t),0)*100)/100;}
+    if(net>0){let lo=-0.99,hi=5,f=r=>flows.reduce((s,cf,t)=>s+cf/Math.pow(1+r,t),0),mid=0;if(f(lo)*f(hi)<0){for(let i=0;i<100;i++){mid=(lo+hi)/2;(f(lo)*f(mid)<0)?hi=mid:lo=mid;}irr=Math.round(mid*1000)/10;}}}
+  return{capex,opex,net,payback,npv,irr,debt:capex*(c.debt||0)/100,equity:capex*(1-(c.debt||0)/100)};}
+
+/* ---------- notifications ---------- */
+function notify(roles,kind,dealId,text){ S.notifs.unshift({id:uid('n'),roles,kind,dealId,text,readBy:[],t:'just now'}); }
+function notifFor(role,kind){return S.notifs.filter(n=>n.roles.includes(role)&&((kind==='message')===(n.kind==='message')));}
+function unread(role,kind){return notifFor(role,kind).filter(n=>!n.readBy.includes(role)).length;}
+function markDealRead(role,dealId){S.notifs.forEach(n=>{if(n.dealId===dealId&&n.roles.includes(role)&&!n.readBy.includes(role))n.readBy.push(role);});}
+function markAllRead(role,kind){notifFor(role,kind).forEach(n=>{if(!n.readBy.includes(role))n.readBy.push(role);});}
+function toast(t){S.toast=t;render();clearTimeout(window.__tt);window.__tt=setTimeout(()=>{S.toast=null;render();},2200);}
+
+/* ---------- actions ---------- */
+function commit(){save();render();}
+function setRole(r){S.role=r;S.view='list';S.navtab=null;S.dealId=null;S.tab=null;S.openMenu=null;commit();}
+function openDeal(id){S.dealId=id;S.view='detail';S.tab=null;S.openMenu=null;markDealRead(S.role,id);commit();}
+function back(){S.view='list';S.dealId=null;commit();}
+function setTab(t){S.tab=t;commit();}
+function toggleMenu(m){S.openMenu=S.openMenu===m?null:m;render();}
+function openNotif(n){if(!n.readBy.includes(S.role))n.readBy.push(S.role);S.openMenu=null;if(n.dealId)openDeal(n.dealId);else commit();}
+
+function setGate(id,n,v){dealById(id).gates[n-1].verdict=v;commit();}
+function finalizeGate(id){const d=dealById(id);const o=gateOutcome(d);if(!o.ready)return;
+  if(o.decision==='DECLINED'){const hadScores=d.pillars.some(p=>p.grades.some(x=>x!=null));d.state='DECLINED';d.stage1='DECLINED';
+    if(hadScores){d.pillars=blankPillars();toast('Deal declined — Stage 2 scores cleared.');}else toast('Deal declined.');}
+  else{d.state='STAGE1_PASSED';d.stage1=o.decision;toast('Stage 1 finalized: '+(o.decision==='CONDITIONAL'?'Conditional pass':'Pass')+'.');}
+  notify(['BD'],'alert',id,d.id+': Stage 1 '+(d.stage1==='DECLINED'?'declined':'passed')+'.');commit();}
+function setGrade(id,code,i,val){const d=dealById(id);d.pillars.find(p=>p.code===code).grades[i]=val;commit();}
+function saveScoring(id){const d=dealById(id);const s=scoreOutcome(d);
+  if(s.complete&&!S.notifs.some(n=>n.dealId===id&&n.text.includes('ready for the committee'))){notify(['IC_MEMBER'],'alert',id,d.id+' completed Stage 2 scoring — ready for the committee decision.');toast('Scoring saved — IC notified it is ready.');}
+  else toast('Scoring saved.');commit();}
+function decideStage2(id,dec,reason){const d=dealById(id);d.stage2=dec;d.stage2_reason=reason||'';
+  d.state=dec==='GO'?'STAGE2_GO':dec==='CONDITIONAL'?'STAGE2_CONDITIONAL':'STAGE2_NO_GO';
+  notify(['BD'],'alert',id,d.id+': committee decision — '+(dec==='GO'?'GO':dec==='CONDITIONAL'?'Conditional GO':'NO-GO')+'.');toast('Committee decision recorded.');commit();}
+function takeDeal(id){const d=dealById(id);d.state='UNDER_REVIEW';d.analyst=ROLES[S.role].person;notify(['BD'],'alert',id,d.id+' is now under review by '+d.analyst+'.');toast('Taken for review.');commit();}
+function submitDeal(id){const d=dealById(id);const missing=REQUIRED.filter(([k])=>{const v=k==='name'?d.name:d.intake[k];return v===''||v==null;});
+  if(missing.length){toast('Missing required: '+missing.map(m=>m[1]).join(', '));return;}
+  d.state='SUBMITTED';notify(ASSESSORS,'alert',id,d.id+' ('+d.name+') was submitted and awaits review.');toast('Submitted for review.');commit();}
+function resubmit(id){submitDeal(id);}
+function reject(id,reason){const d=dealById(id);d.state='REJECTED_TO_BD';d.rejectReason=reason;notify(['BD'],'alert',id,d.id+' was returned for changes.');toast('Returned to BD.');commit();}
+function requestEdit(id,just){const d=dealById(id);d.editReq={status:'PENDING',just};notify(ASSESSORS,'alert',id,'Edit-access requested on '+d.id+'.');toast('Edit access requested.');commit();}
+function decideEdit(id,ok,reason){const d=dealById(id);d.editReq.status=ok?'APPROVED':'DENIED';d.editReq.reason=reason||'';
+  if(ok){d.state='REJECTED_TO_BD';d.rejectReason='Reopened for edit at BD request.';}notify(['BD'],'alert',id,'Edit-access '+(ok?'approved — deal reopened.':'denied.'));toast('Edit request '+(ok?'approved.':'denied.'));commit();}
+function sendMsg(id){const el=$('chatbox');const v=(el.value||'').trim();if(!v)return;const d=dealById(id);
+  d.comments.push({role:S.role,body:v,t:'just now'});const to=S.role==='BD'?ASSESSORS:['BD'];
+  notify(to,'message',id,'New message on '+d.id+' from '+ROLES[S.role].person+': '+(v.length>60?v.slice(0,57)+'…':v));
+  el.value='';commit();setTimeout(()=>{const c=$('chatscroll');if(c)c.scrollTop=c.scrollHeight;},0);}
+
+/* proposal */
+function createProposal(id){const d=dealById(id);d.proposal={status:'DRAFT',tariff:d.intake.proposed_tariff_ngn_kwh||'',tenor:d.intake.tenor_years||'',value:d.intake.total_project_cost_usd_m||'',summary:'',validity:'',version:0};toast('Proposal created.');commit();}
+function propField(id,f,v){dealById(id).proposal[f]=v;save();}
+function propAction(id,act){const d=dealById(id),p=d.proposal;
+  if(act==='submit'){p.status='IN_REVIEW';notify(ASSESSORS,'alert',id,'Proposal for '+d.id+' submitted for review.');toast('Proposal submitted.');}
+  if(act==='return'){p.status='DRAFT';toast('Returned to draft.');}
+  if(act==='send'){p.status='SENT';p.version=(p.version||0)+1;notify(['BD'],'alert',id,'Proposal for '+d.id+' sent to client (v'+p.version+').');toast('Sent to client.');}
+  if(act==='accept'){p.status='ACCEPTED';if(!d.project)d.project={status:'NOT_STARTED',health:'GREEN',note:'',milestones:[],risks:[]};notify(['BD'],'alert',id,'Proposal for '+d.id+' accepted — delivery project opened.');toast('Accepted — project opened.');}
+  if(act==='reject'){p.status='REJECTED';notify(['BD'],'alert',id,'Proposal for '+d.id+' rejected by client.');toast('Marked rejected.');}
+  commit();}
+
+/* project */
+function projStatus(id,s){const pj=dealById(id).project;pj.status=s;if(s==='IN_PROGRESS'&&!pj.start)pj.start=true;commit();}
+function projHealth(id,h){dealById(id).project.health=h;commit();}
+function msStatus(id,mid,s){const m=dealById(id).project.milestones.find(m=>m.id===mid);m.s=s;commit();}
+function msDel(id,mid){const pj=dealById(id).project;pj.milestones=pj.milestones.filter(m=>m.id!==mid);commit();}
+function msAdd(id,name){if(!name.trim())return;dealById(id).project.milestones.push({id:uid('m'),n:name.trim(),s:'PENDING'});commit();}
+function riskDel(id,rid){const pj=dealById(id).project;pj.risks=pj.risks.filter(r=>r.id!==rid);commit();}
+function riskAdd(id,d_,sev){if(!d_.trim())return;dealById(id).project.risks.push({id:uid('r'),k:'RISK',d:d_.trim(),sev,st:'OPEN'});commit();}
+
+/* cost */
+function ensureCost(id){const d=dealById(id);if(!d.cost)d.cost={capex:[],opex:[],revenue:'',life:15,debt:70,discount:12};commit();}
+function costField(id,f,v){dealById(id).cost[f]=v===''?'':+v;save();const o=costOutputs(dealById(id).cost);const e=$('costout');if(e)e.innerHTML=costStats(o);}
+function lineAdd(id,kind,c,a){if(!c.trim())return;dealById(id).cost[kind].push({id:uid('l'),c:c.trim(),a:+a||0});commit();}
+function lineDel(id,kind,lid){const cost=dealById(id).cost;cost[kind]=cost[kind].filter(l=>l.id!==lid);commit();}
+
+/* ---------- modal system ---------- */
+function openModal(type,dealId,extra){S.modal={type,dealId,extra:extra||{}};render();setTimeout(()=>{const f=document.querySelector('.modal input,.modal textarea,.modal select');if(f)f.focus();},0);}
+function closeModal(){S.modal=null;render();}
+function intakeFields(d){const I=d?d.intake:{};const v=(k)=>esc(k==='name'?(d?d.name:''):I[k]??'');
+  const sel=(k,opts)=>`<select id="m_${k}" class="fld">${opts.map(o=>`<option ${(I[k]||'')===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  return `<div class="fgrid">
+    <div class="full"><label class="f">Deal name *</label><input id="m_name" value="${v('name')}"></div>
+    <div><label class="f">Deal type *</label>${sel('deal_type',['Greenfield','Brownfield','JV'])}</div>
+    <div><label class="f">Sub-sector</label><input id="m_sub_sector" value="${v('sub_sector')}"></div>
+    <div><label class="f">Client *</label><input id="m_client_name" value="${v('client_name')}"></div>
+    <div><label class="f">Location *</label><input id="m_location" value="${v('location')}"></div>
+    <div><label class="f">Total cost (USD m) *</label><input id="m_total_project_cost_usd_m" type="number" value="${v('total_project_cost_usd_m')}"></div>
+    <div><label class="f">Installed capacity</label><input id="m_installed_capacity" value="${v('installed_capacity')}"></div>
+    <div><label class="f">Proposed tariff (NGN/kWh) *</label><input id="m_proposed_tariff_ngn_kwh" type="number" value="${v('proposed_tariff_ngn_kwh')}"></div>
+    <div><label class="f">Tenor (yrs) *</label><input id="m_tenor_years" type="number" value="${v('tenor_years')}"></div>
+  </div>`;}
+function readIntake(){const g=k=>($('m_'+k)?$('m_'+k).value:'');const o={name:g('name')};
+  ['deal_type','sub_sector','client_name','location','total_project_cost_usd_m','installed_capacity','proposed_tariff_ngn_kwh','tenor_years'].forEach(k=>o[k]=g(k));return o;}
+function modalConfig(){const m=S.modal,d=dealById(m.dealId);
+  switch(m.type){
+    case 'newdeal': return {title:'New Deal',body:intakeFields(null),submit:'Create draft'};
+    case 'editdeal': return {title:'Edit Deal — '+d.id,body:intakeFields(d),submit:'Save'};
+    case 'reject': return {title:'Return to BD',body:`<label class="f">Reason (required)</label><textarea id="m_reason" rows="4" placeholder="What should the BD revise?"></textarea>`,submit:'Return to BD',danger:true};
+    case 'editaccess': return {title:'Request Edit Access',body:`<label class="f">Justification</label><textarea id="m_just" rows="3" placeholder="Why do you need to edit this submitted deal?"></textarea>`,submit:'Submit request'};
+    case 'denyedit': return {title:'Deny Edit Request',body:`<label class="f">Reason</label><textarea id="m_reason" rows="3"></textarea>`,submit:'Deny',danger:true};
+    case 'decision': {const s=scoreOutcome(d);const rec=s.verdict==='GO'?'GO':s.verdict==='CONDITIONAL'?'Conditional GO':'NO-GO';
+      return {title:'IC Decision — '+d.id,body:`<div class="note" style="background:#f1f5f9">Weighted score <b>${s.total}/100</b> · recommendation <b>${rec}</b>. You may accept or override.</div>
+        <div style="display:flex;gap:8px;margin:12px 0" id="decpills">
+          ${[['GO','GO','green'],['CONDITIONAL','Conditional GO','amber'],['NO_GO','NO-GO','red']].map(([k,l,t])=>`<button class="pill" data-k="${k}" data-t="${t}" onclick="decPick(this)">${l}</button>`).join('')}</div>
+        <label class="f">Rationale (required if overriding)</label><textarea id="m_reason" rows="2"></textarea>`,submit:'Record decision',extra:{pick:s.verdict}};}
+    case 'milestone': return {title:'Add Milestone',body:`<label class="f">Name</label><input id="m_name2">`,submit:'Add'};
+    case 'risk': return {title:'Add Risk / Issue',body:`<label class="f">Description</label><input id="m_desc"><label class="f" style="margin-top:8px">Severity</label><select id="m_sev" class="fld"><option>LOW</option><option selected>MEDIUM</option><option>HIGH</option></select>`,submit:'Add'};
+  }
+}
+window.decPick=function(b){S.modal.extra.pick=b.dataset.k;document.querySelectorAll('#decpills .pill').forEach(p=>p.className='pill');b.className='pill on-'+b.dataset.t;};
+function submitModal(){const m=S.modal,d=m.dealId?dealById(m.dealId):null;
+  if(m.type==='newdeal'){const i=readIntake();if(!i.name.trim()){toast('Deal name is required.');return;}
+    const nd=mkDeal({id:'D-2026-'+String(S.deals.length+1).padStart(4,'0'),name:i.name,state:'DRAFT',intake:intakeOf({...i,name:undefined})});S.deals.unshift(nd);closeModal();toast('Draft created.');openDeal(nd.id);return;}
+  if(m.type==='editdeal'){const i=readIntake();d.name=i.name;Object.assign(d.intake,i);delete d.intake.name;closeModal();toast('Saved.');return;}
+  if(m.type==='reject'){const r=($('m_reason').value||'').trim();if(!r){toast('A reason is required.');return;}closeModal();reject(d.id,r);return;}
+  if(m.type==='editaccess'){requestEdit(d.id,($('m_just').value||'').trim());closeModal();return;}
+  if(m.type==='denyedit'){decideEdit(d.id,false,($('m_reason').value||'').trim());closeModal();return;}
+  if(m.type==='decision'){const pick=m.extra.pick;if(!pick){toast('Pick a decision.');return;}const s=scoreOutcome(d);const reason=($('m_reason').value||'').trim();
+    if(pick!==s.verdict&&!reason){toast('Rationale required when overriding the recommendation.');return;}closeModal();decideStage2(d.id,pick,reason);return;}
+  if(m.type==='milestone'){msAdd(d.id,$('m_name2').value);closeModal();return;}
+  if(m.type==='risk'){riskAdd(d.id,$('m_desc').value,$('m_sev').value);closeModal();return;}
+}
+function renderModal(){if(!S.modal)return'';const c=modalConfig();
+  return `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="mh">${c.title}</div><div class="mb">${c.body}</div>
+    <div class="mf"><button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn ${c.danger?'danger':'primary'}" onclick="submitModal()">${c.submit}</button></div></div></div>`;}
+
+/* ---------- topbar ---------- */
+function navTabs(){const t=[];if(S.role==='BD')t.push(['deals','My Deals']);
+  if(can.assess())t.push(['queue','Queue'],['all','All Deals'],['edits','Edit Requests']);
+  if(S.role==='IC_MEMBER')t.push(['ic','For Decision'],['all','Pipeline']);
+  if(S.role==='ADMIN')t.push(['all','All Deals'],['admin','Admin']);
+  if(!S.navtab||!t.find(x=>x[0]===S.navtab))S.navtab=t[0]?t[0][0]:null;
+  return t.map(([k,l])=>`<button class="${S.navtab===k?'active':''}" onclick="S.navtab='${k}';S.view='list';S.dealId=null;commit()">${l}</button>`).join('');}
+function menuPanel(kind){const items=notifFor(S.role,kind).slice(0,12);const u=unread(S.role,kind);
+  const title=kind==='message'?'Messages':'Notifications';
+  return `<div class="menu" onclick="event.stopPropagation()"><div class="mhd"><span>${title}</span>${u?`<a onclick="markAllRead('${S.role}','${kind}');commit()">Mark all read</a>`:''}</div>
+    ${items.length?items.map(n=>`<button class="mitem ${n.readBy.includes(S.role)?'':'unread'}" onclick='openNotif(${JSON.stringify(n).replace(/'/g,"&#39;")})'>${esc(n.text)}<div class="small muted" style="margin-top:2px">${n.t}</div></button>`).join(''):`<div class="mitem muted">No ${kind==='message'?'messages':'notifications'}.</div>`}</div>`;}
+function topbar(){const mc=unread(S.role,'message'),ac=unread(S.role,'alert');
+  return `<header><div class="bar"><span class="brand">VAP Commercial</span>
+    <nav class="tabs">${navTabs()}</nav><span class="spacer"></span>
+    <div class="iconwrap"><button class="iconbtn" title="Messages" onclick="toggleMenu('messages')">💬${mc?`<span class="badgecount" style="background:#2563eb">${mc}</span>`:''}</button>${S.openMenu==='messages'?menuPanel('message'):''}</div>
+    <div class="iconwrap"><button class="iconbtn" title="Notifications" onclick="toggleMenu('alerts')">🔔${ac?`<span class="badgecount" style="background:#dc2626">${ac}</span>`:''}</button>${S.openMenu==='alerts'?menuPanel('alert'):''}</div>
+    <div class="role-select"><span class="small muted">Viewing as</span>
+      <select onchange="setRole(this.value)">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${S.role===k?'selected':''}>${v.label}</option>`).join('')}</select></div>
+    <span class="small muted">${ROLES[S.role].person}</span>
+    <button class="btn sm" onclick="if(confirm('Reset the demo to its starting data?')){localStorage.removeItem('${LS}');S.deals=seed();S.notifs=[];S.seq=100;S.view='list';S.dealId=null;commit();}">Reset</button>
+  </div></header>`;}
+
+/* ---------- list ---------- */
+function visibleDeals(){const tab=S.navtab;if(S.role==='BD')return S.deals;
+  if(tab==='queue')return S.deals.filter(d=>['SUBMITTED','UNDER_REVIEW'].includes(d.state));
+  if(tab==='ic')return S.deals.filter(d=>d.state==='STAGE1_PASSED');
+  return S.deals;}
+function dealRow(d,extra){const editable=['DRAFT','REJECTED_TO_BD'].includes(d.state);
+  return `<tr class="clickable" onclick="openDeal('${d.id}')">
+    <td class="muted small" style="font-family:monospace">${d.id}</td><td><b>${esc(d.name)}</b></td>
+    <td>${stateBadge(d.state)}</td><td class="muted">${esc(d.intake.client_name)||'—'}</td>
+    <td class="muted">${d.intake.total_project_cost_usd_m!==''?'$'+d.intake.total_project_cost_usd_m+'m':'—'}</td>${extra?extra(d):''}
+    <td class="right" onclick="event.stopPropagation()">
+      ${S.role==='BD'&&editable?`<button class="btn sm" onclick="openModal('editdeal','${d.id}')">Edit</button>`:''}
+      ${S.role==='BD'&&d.state==='DRAFT'?`<button class="btn sm primary" onclick="submitDeal('${d.id}')">Submit</button>`:''}
+      ${can.assess()&&d.state==='SUBMITTED'?`<button class="btn sm primary" onclick="takeDeal('${d.id}')">Take</button>`:''}
+      <a onclick="openDeal('${d.id}')">Open →</a></td></tr>`;}
+function listView(){const tab=S.navtab;
+  if(tab==='edits'){const reqs=S.deals.filter(d=>d.editReq&&d.editReq.status==='PENDING');
+    return cardBox('Edit Access Requests', reqs.length?`<table><tr><th>Deal</th><th>Justification</th><th></th></tr>${reqs.map(d=>`<tr><td><a onclick="openDeal('${d.id}')">${d.id}</a> ${esc(d.name)}</td><td class="muted">${esc(d.editReq.just)||'—'}</td><td class="right"><button class="btn sm primary" onclick="decideEdit('${d.id}',true)">Approve</button> <button class="btn sm danger" onclick="openModal('denyedit','${d.id}')">Deny</button></td></tr>`).join('')}</table>`:'<p class="muted">No pending edit-access requests. A BD can request access on a submitted deal (open one as BD).</p>');}
+  if(tab==='admin')return cardBox('Admin','<p class="muted">Admins use the Django admin back office for full access to users, deals, audit history and reference data. This mockup focuses on the role-based app experience.</p>');
+  const deals=visibleDeals();const title=tab==='queue'?'Deal Queue':tab==='ic'?'Ready for Committee Decision':S.role==='BD'?'My Deals':'All Deals';
+  const extra=tab==='ic'?(d=>{const s=scoreOutcome(d);return `<td>${s.complete?`<b>${s.total}</b>/100`:'<span class="muted">scoring…</span>'}</td>`;}):null;
+  const head=`<tr><th>Ref</th><th>Name</th><th>State</th><th>Client</th><th>Cost</th>${tab==='ic'?'<th>Score</th>':''}<th></th></tr>`;
+  const rows=deals.length?deals.map(d=>dealRow(d,extra)).join(''):`<tr><td colspan="7" class="muted" style="text-align:center;padding:26px">Nothing here for this view.</td></tr>`;
+  const newbtn=S.role==='BD'?`<button class="btn primary" onclick="openModal('newdeal')">+ New Deal</button>`:'';
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2>${title}</h2>${newbtn}</div>
+    <div class="card"><table>${head}${rows}</table></div>
+    ${S.role==='BD'?'<p class="small muted" style="margin-top:10px">You see <b>all</b> deals you created across every stage; you can edit Drafts and Returned deals.</p>':''}`;}
+
+/* ---------- detail panels ---------- */
+function detailTabs(d){const t=[['details','Deal Details']];
+  if(can.assess()&&d.state==='UNDER_REVIEW')t.push(['gates','Stage 1 Gates']);
+  if(can.assess()&&d.state==='STAGE1_PASSED')t.push(['scoring','Stage 2 Scoring'],['gates','Stage 1 Gates']);
+  if(can.ic()&&d.state==='STAGE1_PASSED')t.push(['decision','IC Decision'],['scoring','Scoring (read-only)']);
+  if(['STAGE2_GO','STAGE2_CONDITIONAL','STAGE2_NO_GO'].includes(d.state))t.push(['scoring','Stage 2 Scoring']);
+  if(d.state!=='DRAFT')t.push(['cost','Cost Model']);
+  if(['STAGE2_GO','STAGE2_CONDITIONAL'].includes(d.state))t.push(['proposal','Proposal'],['project','Project']);
+  if(!S.tab||!t.find(x=>x[0]===S.tab))S.tab=t[0][0];return t;}
+function intakeSummary(d){const I=d.intake;const r=(k,v)=>`<dt>${k}</dt><dd>${esc(v)||'—'}</dd>`;
+  return `<div class="dl">${r('Deal name',d.name)}${r('Type',I.deal_type)}${r('Sub-sector',I.sub_sector)}${r('Client',I.client_name)}${r('Location',I.location)}${r('Sponsor',I.sponsor)}${r('Total cost (USD m)',I.total_project_cost_usd_m)}${r('Installed capacity',I.installed_capacity)}${r('Proposed tariff',I.proposed_tariff_ngn_kwh)}${r('Tenor (yrs)',I.tenor_years)}${r('Capital structure',I.capital_structure)}</div>
+    ${S.role==='BD'&&['DRAFT','REJECTED_TO_BD'].includes(d.state)?`<div style="margin-top:12px"><button class="btn sm" onclick="openModal('editdeal','${d.id}')">Edit details</button></div>`:''}`;}
+function gatesPanel(d){const editable=can.assess()&&['UNDER_REVIEW','STAGE1_PASSED'].includes(d.state);const o=gateOutcome(d);const tones={PASS:'green',CONDITIONAL:'amber',FAIL:'red'};
+  const rows=d.gates.map(g=>`<div style="border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:9px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Gate ${g.n}. ${g.name}</b><div style="display:flex;gap:6px">${['PASS','CONDITIONAL','FAIL'].map(v=>`<button class="pill sm ${g.verdict===v?'on-'+tones[v]:''}" ${editable?'':'disabled'} onclick="setGate('${d.id}',${g.n},'${v}')">${v[0]+v.slice(1).toLowerCase()}</button>`).join('')}</div></div></div>`).join('');
+  const bg={green:'#dcfce7',amber:'#fef9c3',red:'#fee2e2',slate:'#f1f5f9'}[o.tone];const reassess=d.state==='STAGE1_PASSED';
+  return `<h3>Stage 1 — Knockout Gates</h3><p class="small muted">Any FAIL declines; a CONDITIONAL advances but flags the deal.${reassess?' Re-assessing can revise the outcome — a knockout would clear the Stage 2 scores.':''}</p>${rows}
+    <div class="note" style="background:${bg}">${o.text}</div>
+    ${editable?`<div class="right" style="margin-top:10px"><button class="btn primary" ${o.ready?'':'disabled'} onclick="finalizeGate('${d.id}')">${reassess?'Re-assess Stage 1':'Finalize Stage 1 Decision'}</button></div>`:''}`;}
+function scoringPanel(d,editable){const s=scoreOutcome(d);const tone=v=>v===5?'green':v===3?'amber':'red';
+  const body=d.pillars.map(p=>{const got=p.grades.filter(x=>x!=null);const pct=got.length?Math.round(got.reduce((a,b)=>a+b,0)/(p.grades.length*5)*100):0;
+    const subs=p.subs.map((nm,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--line)"><span class="small">${nm}</span><span style="display:flex;gap:5px">${[1,3,5].map(g=>`<button class="pill sm ${p.grades[i]===g?'on-'+tone(g):''}" ${editable?'':'disabled'} onclick="setGrade('${d.id}','${p.code}',${i},${g})">${g}</button>`).join('')}</span></div>`).join('');
+    return `<div style="border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:9px"><div style="display:flex;justify-content:space-between"><b>${p.code}. ${p.name}</b><span class="muted small">weight ${p.weight}% · ${pct}%</span></div>${subs}</div>`;}).join('');
+  const vl=s.verdict==='GO'?'GO':s.verdict==='CONDITIONAL'?'CONDITIONAL GO':s.verdict==='NO_GO'?'NO-GO':null;const vc=s.verdict==='GO'?'b-green':s.verdict==='CONDITIONAL'?'b-amber':'b-red';
+  return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--slate-bg);border-radius:10px;padding:11px 14px;margin-bottom:12px"><div><div class="small muted">Weighted total</div><div style="font-size:24px;font-weight:700">${s.total} <span class="muted" style="font-size:14px">/ 100</span></div></div><div>${vl?`<span class="badge ${vc}">${vl}</span>`:`<span class="small muted">${s.complete?'Bands not set':'Grade all to see the verdict'}</span>`}</div></div>${body}
+    ${editable?`<div class="right"><button class="btn primary" onclick="saveScoring('${d.id}')">Save Scoring</button></div>`:''}`;}
+function costStats(o){if(!o)return'';const s=(k,v)=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  return `<div class="statgrid">${s('Total CAPEX','$'+o.capex+'m')}${s('Annual OPEX','$'+o.opex+'m')}${s('Net cashflow','$'+o.net+'m')}${s('Payback',(o.payback??'—')+' yrs')}${s('NPV',o.npv!=null?'$'+o.npv+'m':'—')}${s('IRR',(o.irr??'—')+'%')}${s('Debt / Equity','$'+Math.round(o.debt)+'m / $'+Math.round(o.equity)+'m')}</div>`;}
+function costPanel(d){if(!d.cost)return `<p class="muted">No cost model yet. ${can.assess()?`<button class="btn sm primary" onclick="ensureCost('${d.id}')">Build Cost Model</button>`:'(An Analyst/Manager builds it.)'}</p>`;
+  const c=d.cost,o=costOutputs(c),ed=can.assess();
+  const lineTbl=(kind,t)=>`<h4 style="margin:12px 0 6px">${t}</h4><div class="card"><table><tr><th>Category</th><th class="right">USD m</th>${ed?'<th></th>':''}</tr>
+    ${c[kind].map(l=>`<tr><td>${esc(l.c)}</td><td class="right">${l.a}</td>${ed?`<td class="right"><a onclick="lineDel('${d.id}','${kind}','${l.id}')">✕</a></td>`:''}</tr>`).join('')||`<tr><td colspan="3" class="muted">No lines.</td></tr>`}
+    ${ed?`<tr><td><input id="lc_${kind}" placeholder="Category"></td><td><input id="la_${kind}" type="number" placeholder="0"></td><td class="right"><button class="btn sm" onclick="lineAdd('${d.id}','${kind}',$('lc_${kind}').value,$('la_${kind}').value)">Add</button></td></tr>`:''}</table></div>`;
+  const a=(k,l,step)=>`<div><label class="f">${l}</label><input type="number" step="${step||1}" value="${c[k]??''}" ${ed?`onchange="costField('${d.id}','${k}',this.value)"`:'disabled'}></div>`;
+  return `<div id="costout">${costStats(o)}</div>
+    <h4 style="margin:14px 0 6px">Assumptions</h4><div class="fgrid">${a('revenue','Annual revenue (USD m)',0.1)}${a('life','Project life (yrs)')}${a('debt','Debt (%)')}${a('discount','Discount rate (%)')}</div>
+    ${lineTbl('capex','Capital Costs (CAPEX)')}${lineTbl('opex','Operating Costs (OPEX, annual)')}`;}
+function proposalPanel(d){if(!d.proposal)return `<p class="muted">No proposal yet.${S.role==='BD'?` <button class="btn sm primary" onclick="createProposal('${d.id}')">Create Proposal</button>`:''}</p>`;
+  const p=d.proposal,bd=S.role==='BD',as=can.assess(),draft=p.status==='DRAFT';
+  const bc={DRAFT:'b-slate',IN_REVIEW:'b-amber',SENT:'b-blue',ACCEPTED:'b-green',REJECTED:'b-red'}[p.status];
+  const f=(k,l,type)=>`<div><label class="f">${l}</label>${type==='ta'?`<textarea rows="2" ${draft&&bd?`onchange="propField('${d.id}','${k}',this.value)"`:'disabled'}>${esc(p[k]||'')}</textarea>`:`<input value="${esc(p[k]??'')}" ${draft&&bd?`onchange="propField('${d.id}','${k}',this.value)"`:'disabled'}>`}</div>`;
+  const actions=[];
+  if(bd&&draft)actions.push(`<button class="btn primary" onclick="propAction('${d.id}','submit')">Submit for review</button>`);
+  if(as&&p.status==='IN_REVIEW')actions.push(`<button class="btn" onclick="propAction('${d.id}','return')">Return to draft</button>`,`<button class="btn primary" onclick="propAction('${d.id}','send')">Send to client</button>`);
+  if((bd||as)&&p.status==='SENT')actions.push(`<button class="btn danger" onclick="propAction('${d.id}','reject')">Mark rejected</button>`,`<button class="btn primary" onclick="propAction('${d.id}','accept')">Mark accepted</button>`);
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="badge ${bc}">${p.status}${p.version?` · v${p.version}`:''}</span><button class="btn sm" onclick="toast('PDF generated (mock).')">⬇ Download PDF</button></div>
+    <div class="fgrid">${f('summary','Executive summary','ta')}<div></div>${f('tariff','Proposed tariff (NGN/kWh)')}${f('tenor','Tenor (yrs)')}${f('value','Contract value (USD m)')}${f('validity','Valid until')}</div>
+    ${actions.length?`<div class="right" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">${actions.join('')}</div>`:''}`;}
+function projectPanel(d){if(!d.project)return `<p class="muted">The delivery project opens automatically once the proposal is accepted.</p>`;
+  const pj=d.project,ed=can.assess(),done=pj.milestones.filter(m=>m.s==='DONE').length,pct=pj.milestones.length?Math.round(done/pj.milestones.length*100):0;
+  const trans={NOT_STARTED:[['IN_PROGRESS','Start'],['CANCELLED','Cancel']],IN_PROGRESS:[['ON_HOLD','Hold'],['COMPLETED','Complete'],['CANCELLED','Cancel']],ON_HOLD:[['IN_PROGRESS','Resume'],['CANCELLED','Cancel']],COMPLETED:[],CANCELLED:[]}[pj.status]||[];
+  const hc={GREEN:'#16a34a',AMBER:'#ca8a04',RED:'#dc2626'}[pj.health];
+  const ms=pj.milestones.map(m=>`<tr><td>${esc(m.n)}</td><td>${ed?`<select class="fld" style="width:auto" onchange="msStatus('${d.id}','${m.id}',this.value)">${['PENDING','IN_PROGRESS','DONE','BLOCKED'].map(s=>`<option ${m.s===s?'selected':''}>${s}</option>`).join('')}</select>`:msBadge(m.s)}</td>${ed?`<td class="right"><a onclick="msDel('${d.id}','${m.id}')">✕</a></td>`:''}</tr>`).join('')||`<tr><td colspan="3" class="muted">No milestones.</td></tr>`;
+  const rk=pj.risks.map(r=>`<tr><td>${r.k}</td><td>${esc(r.d)}</td><td><span class="badge ${r.sev==='HIGH'?'b-red':r.sev==='MEDIUM'?'b-amber':'b-slate'}">${r.sev}</span></td><td>${r.st}</td>${ed?`<td class="right"><a onclick="riskDel('${d.id}','${r.id}')">✕</a></td>`:''}</tr>`).join('')||`<tr><td colspan="5" class="muted">No risks logged.</td></tr>`;
+  return `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <span class="badge b-blue">${pj.status.replace('_',' ')}</span>
+      <span><span class="dot" style="background:${hc}"></span> ${ed?`<select class="fld" style="width:auto" onchange="projHealth('${d.id}',this.value)">${['GREEN','AMBER','RED'].map(h=>`<option ${pj.health===h?'selected':''}>${h}</option>`).join('')}</select>`:pj.health} · <span class="progress"><i style="width:${pct}%"></i></span> ${pct}%</span></div>
+    ${ed&&trans.length?`<div style="display:flex;gap:6px;margin-bottom:10px">${trans.map(([s,l])=>`<button class="btn sm ${s==='CANCELLED'?'':'primary'}" onclick="projStatus('${d.id}','${s}')">${l}</button>`).join('')}</div>`:''}
+    <h4 style="margin:8px 0 6px">Milestones</h4><div class="card"><table><tr><th>Milestone</th><th>Status</th>${ed?'<th></th>':''}</tr>${ms}</table></div>
+    ${ed?`<div style="margin-top:8px"><button class="btn sm" onclick="openModal('milestone','${d.id}')">+ Milestone</button></div>`:''}
+    <h4 style="margin:14px 0 6px">Risks & Issues</h4><div class="card"><table><tr><th>Type</th><th>Description</th><th>Severity</th><th>Status</th>${ed?'<th></th>':''}</tr>${rk}</table></div>
+    ${ed?`<div style="margin-top:8px"><button class="btn sm" onclick="openModal('risk','${d.id}')">+ Risk / Issue</button></div>`:''}`;}
+function msBadge(s){const m={DONE:'b-green',IN_PROGRESS:'b-blue',PENDING:'b-slate',BLOCKED:'b-red'}[s]||'b-slate';return `<span class="badge ${m}">${s.replace('_',' ')}</span>`;}
+function chatPanel(d){const msgs=d.comments.length?d.comments.map(c=>{const mine=c.role===S.role;return `<div class="chat-msg ${mine?'chat-mine':'chat-them'}"><div class="small" style="opacity:.8;margin-bottom:2px">${ROLES[c.role]?ROLES[c.role].person:c.role} · ${ROLES[c.role]?ROLES[c.role].label:''} · ${c.t}</div>${esc(c.body)}</div>`;}).join(''):`<p class="muted small">No messages yet. ${can.assess()?'Ask the BD a question':'Add a clarification'} below.</p>`;
+  return `<div id="chatscroll" style="max-height:280px;overflow:auto;padding-right:4px">${msgs}</div>
+    <div style="display:flex;gap:8px;margin-top:10px"><textarea id="chatbox" rows="2" placeholder="Write a message…"></textarea><button class="btn primary" onclick="sendMsg('${d.id}')">Send</button></div>`;}
+function tabContent(d){switch(S.tab){case'details':return intakeSummary(d);case'gates':return gatesPanel(d);
+  case'scoring':return scoringPanel(d,can.assess()&&d.state==='STAGE1_PASSED');case'decision':return decisionPanelTab(d);
+  case'cost':return costPanel(d);case'proposal':return proposalPanel(d);case'project':return projectPanel(d);}return'';}
+function decisionPanelTab(d){const s=scoreOutcome(d);
+  if(!s.complete)return `<div class="note" style="background:#fef9c3">Scoring isn't complete yet. The committee can decide once every sub-criterion is graded.</div>`;
+  const rec=s.verdict==='GO'?'GO':s.verdict==='CONDITIONAL'?'Conditional GO':'NO-GO';const cur=d.stage2;
+  return `<h3>Investment Committee Decision</h3><div class="note" style="background:#f1f5f9">Weighted score <b>${s.total}/100</b> · recommendation <b>${rec}</b>.${cur?` Current decision: <b>${cur==='GO'?'GO':cur==='CONDITIONAL'?'Conditional GO':'NO-GO'}</b>.`:''}</div>
+    <div style="margin-top:12px"><button class="btn primary" onclick="openModal('decision','${d.id}')">Record / change decision</button></div>`;}
+function detailView(){const d=dealById(S.dealId);if(!d){back();return'';}
+  const tabs=detailTabs(d);const s2=d.stage2?`<span class="badge ${d.stage2==='GO'?'b-green':d.stage2==='CONDITIONAL'?'b-amber':'b-red'}">${d.stage2==='GO'?'GO':d.stage2==='CONDITIONAL'?'Conditional GO':'NO-GO'}</span>`:'';
+  let banners='';
+  if(d.state==='REJECTED_TO_BD'&&d.rejectReason)banners+=`<div class="note" style="background:#fee2e2;color:#991b1b;margin-bottom:12px"><b>Returned to BD:</b> ${esc(d.rejectReason)} ${S.role==='BD'?`<button class="btn sm" style="margin-left:8px" onclick="resubmit('${d.id}')">Re-submit</button>`:''}</div>`;
+  if(['STAGE2_GO','STAGE2_CONDITIONAL','STAGE2_NO_GO'].includes(d.state))banners+=`<div class="note" style="background:${d.state==='STAGE2_GO'?'#dcfce7':d.state==='STAGE2_CONDITIONAL'?'#fef9c3':'#fee2e2'};margin-bottom:12px"><b>Committee decision: ${d.stage2==='GO'?'GO':d.stage2==='CONDITIONAL'?'Conditional GO':'NO-GO'}</b>${d.stage2_reason?' — '+esc(d.stage2_reason):''}</div>`;
+  if(S.role==='BD'&&d.state==='SUBMITTED'&&(!d.editReq||d.editReq.status!=='PENDING'))banners+=`<div class="note" style="background:#f1f5f9;margin-bottom:12px">This deal is submitted and read-only. <button class="btn sm" style="margin-left:6px" onclick="openModal('editaccess','${d.id}')">Request edit access</button></div>`;
+  if(d.editReq&&d.editReq.status==='PENDING'&&S.role==='BD')banners+=`<div class="note" style="background:#fef9c3;margin-bottom:12px">Edit-access request pending.</div>`;
+  const header=`<a onclick="back()">← Back</a><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 2px"><h2>${esc(d.name)}</h2>${stateBadge(d.state)}${s2}</div><div class="muted small" style="margin-bottom:10px">${d.id}${d.analyst?` · assessor: ${d.analyst}`:''}</div>`;
+  const sideBySide=can.assess()&&['UNDER_REVIEW','STAGE1_PASSED'].includes(d.state)&&['gates','scoring'].includes(S.tab);
+  const tabbar=`<div class="dtabs">${tabs.map(([k,l])=>`<button class="${S.tab===k?'active':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>`;
+  const main=sideBySide?`<div class="grid2"><div class="card"><div class="hd">Deal Details</div><div class="bd">${intakeSummary(d)}</div></div><div class="card"><div class="bd">${tabContent(d)}</div></div></div>`:`<div class="card"><div class="bd">${tabContent(d)}</div></div>`;
+  return header+banners+tabbar+main+`<div class="card" style="margin-top:18px"><div class="hd">Discussion</div><div class="bd">${chatPanel(d)}</div></div>`;}
+
+function cardBox(t,inner){return `<h2 style="margin-bottom:14px">${t}</h2><div class="card"><div class="bd">${inner}</div></div>`;}
+
+/* ---------- render ---------- */
+function render(){
+  $('app').innerHTML = topbar() + `<main>${S.view==='detail'?detailView():listView()}</main>`
+    + (S.modal?renderModal():'') + (S.toast?`<div class="toast">${esc(S.toast)}</div>`:'');
+}
+// close menus on outside click
+document.addEventListener('click',e=>{ if(S.openMenu && !e.target.closest('.iconwrap')){ S.openMenu=null; render(); } });
+render();
+</script>
+</body>
+</html>

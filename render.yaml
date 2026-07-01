@@ -1,0 +1,23 @@
+# Render Blueprint — one free web service (Django serving the built React app)
+# plus a free PostgreSQL database. Deploy by connecting this repo on render.com.
+services:
+  - type: web
+    name: vap-commercial
+    runtime: docker
+    plan: free
+    healthCheckPath: /admin/login/
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true          # Render generates a strong secret
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vap-db
+          property: connectionString
+      # RENDER_EXTERNAL_HOSTNAME is injected automatically and trusted in settings.
+      # Seed framework data + create an admin after first deploy (see DEPLOY.md).
+
+databases:
+  - name: vap-db
+    plan: free
