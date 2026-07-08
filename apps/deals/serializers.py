@@ -9,6 +9,10 @@ from .models import (
 
 
 class DealIntakeSerializer(serializers.ModelSerializer):
+    sales_agent_name = serializers.CharField(
+        source="sales_agent.name", read_only=True, default=""
+    )
+
     class Meta:
         model = DealIntake
         exclude = ["id", "deal"]
@@ -23,6 +27,7 @@ class DealListSerializer(serializers.ModelSerializer):
         model = Deal
         fields = [
             "id", "deal_ref", "deal_name", "state", "stage1_decision",
+            "classification", "next_review_date",
             "created_by_name", "assigned_analyst", "created_at", "submitted_at",
         ]
 
@@ -36,12 +41,14 @@ class DealDetailSerializer(serializers.ModelSerializer):
             "id", "deal_ref", "state", "stage1_decision",
             "stage2_decision", "stage2_rationale", "created_by",
             "assigned_analyst", "current_rejection_reason", "intake",
+            "classification", "next_review_date", "classification_note",
             "created_at", "submitted_at", "updated_at",
         ]
         read_only_fields = [
             "id", "deal_ref", "state", "stage1_decision",
             "stage2_decision", "stage2_rationale", "created_by",
             "assigned_analyst", "current_rejection_reason",
+            "classification", "next_review_date", "classification_note",
             "created_at", "submitted_at", "updated_at",
         ]
 
@@ -90,9 +97,17 @@ class GateResultInputSerializer(serializers.Serializer):
 
 
 class SubScoreInputSerializer(serializers.Serializer):
-    """Validates one incoming Stage 2 sub-criterion grade."""
+    """
+    Validates one incoming Stage 2 sub-criterion score. Qualitative
+    sub-criteria carry a `grade` (1–5); numeric ones carry a `measured_value`
+    from which the service derives the grade, so both are optional here and the
+    scoring service decides which one applies.
+    """
     sub_criterion = serializers.IntegerField()
-    grade = serializers.ChoiceField(choices=[1, 3, 5])
+    grade = serializers.ChoiceField(choices=[1, 2, 3, 4, 5], required=False, allow_null=True)
+    measured_value = serializers.DecimalField(
+        max_digits=14, decimal_places=4, required=False, allow_null=True
+    )
     notes = serializers.CharField(required=False, allow_blank=True, default="")
 
 
@@ -112,8 +127,15 @@ class DealCommentSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ClassificationInputSerializer(serializers.Serializer):
+    """Validates a pipeline reclassification (Active / Nurture / Deferred)."""
+    classification = serializers.ChoiceField(choices=["ACTIVE", "NURTURE", "DEFERRED"])
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+    next_review_date = serializers.DateField(required=False, allow_null=True, default=None)
+
+
 class Stage2DecisionInputSerializer(serializers.Serializer):
-    """Validates the IC's final Stage 2 decision."""
+    """Validates the Management Investment Committee's final Stage 2 decision."""
     decision = serializers.ChoiceField(choices=["GO", "CONDITIONAL", "NO_GO"])
     rationale = serializers.CharField(required=False, allow_blank=True, default="")
 

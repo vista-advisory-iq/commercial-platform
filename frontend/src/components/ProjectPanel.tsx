@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   useProject, useProjectHistory, useChangeProjectStatus, useUpdateProjectDetails,
-  useMilestoneMutations, useRiskMutations,
+  useMilestoneMutations, useRiskMutations, useHandoverMutations,
 } from '@/hooks/useProjects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +41,7 @@ function ProjectBody({ project, dealId, canEdit }: { project: Project; dealId: s
   const updateDetails = useUpdateProjectDetails(project.id, dealId)
   const ms = useMilestoneMutations(dealId)
   const risk = useRiskMutations(dealId)
+  const handover = useHandoverMutations(dealId)
   const { data: history } = useProjectHistory(project.id)
 
   const [note, setNote] = useState(project.status_note)
@@ -113,6 +114,38 @@ function ProjectBody({ project, dealId, canEdit }: { project: Project; dealId: s
             onBlur={() => canEdit && note !== project.status_note && updateDetails.mutate({ status_note: note })} />
         </div>
       </div>
+
+      {/* Handover checklist */}
+      {(project.handover_items ?? []).length > 0 && (
+        <section>
+          <h4 className="mb-2 text-sm font-semibold">
+            Commercial → Delivery Handover
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {project.handover_items.filter((h) => h.done).length}/{project.handover_items.length} complete
+            </span>
+          </h4>
+          <ul className="divide-y overflow-hidden rounded-lg border">
+            {project.handover_items.map((item) => (
+              <li key={item.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary"
+                  checked={item.done}
+                  disabled={!canEdit || handover.update.isPending}
+                  onChange={(e) => handover.update.mutate({ id: item.id, data: { done: e.target.checked } })}
+                />
+                <span className={item.done ? 'text-muted-foreground line-through' : ''}>{item.name}</span>
+                {item.done && item.done_by_name && (
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {item.done_by_name}
+                    {item.done_at && ` · ${new Date(item.done_at).toLocaleDateString()}`}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Milestones */}
       <section>

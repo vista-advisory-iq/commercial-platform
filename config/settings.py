@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.proposals",
     "apps.projects",
     "apps.costing",
+    "apps.agents",
 ]
 
 MIDDLEWARE = [
@@ -122,6 +123,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_TRUSTED_ORIGINS = [
     o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
+# In dev, trust the Vite dev server so the Django admin works through its /admin
+# proxy (localhost:5173 → :8000). Dev-only, so production stays locked down.
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += ["http://localhost:5173", "http://127.0.0.1:5173"]
 # Render provides the public hostname automatically — trust it without manual config.
 _render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if _render_host:
@@ -163,6 +168,15 @@ STAGE1_CONDITIONAL_POLICY = os.getenv("STAGE1_CONDITIONAL_POLICY", "ADVANCE_CAPP
 # inlined in the scoring engine. Set STAGE2_SCORE_BANDS="" to disable verdicts.
 _stage2_bands = os.getenv("STAGE2_SCORE_BANDS", '{"GO": 80, "CONDITIONAL": 65}')
 STAGE2_SCORE_BANDS = json.loads(_stage2_bands) if _stage2_bands else None
+
+# Finder programme: how long a registered Sales Agent's lead is protected from
+# a competing claim, in days from registration. Pending DEL sign-off on the
+# finder terms — config, not code.
+FINDER_PROTECTION_DAYS = int(os.getenv("FINDER_PROTECTION_DAYS", "90"))
+
+# Nurture / Deferred pipeline classifications must be re-reviewed on a cadence;
+# this is the default interval the UI uses to suggest the next review date.
+PIPELINE_REVIEW_DAYS = int(os.getenv("PIPELINE_REVIEW_DAYS", "90"))
 
 CORS_ALLOWED_ORIGINS = os.getenv(
     "CORS_ALLOWED_ORIGINS", "http://localhost:5173"

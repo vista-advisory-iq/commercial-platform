@@ -51,9 +51,22 @@ class Pillar(models.Model):
 
 class SubCriterion(models.Model):
     """
-    A weighted sub-criterion within a pillar, graded 1/3/5 against bands.
-    The pillar's score is derived from these, not entered directly.
+    A weighted sub-criterion within a pillar, scored 1–5 against defined bands
+    (framework slides 7–11). The pillar's score is derived from these, not
+    entered directly.
+
+    Two kinds of sub-criterion:
+      * NUMERIC — the analyst enters a measured figure (IRR %, payback yrs,
+        EBITDA margin %, contract yrs …) and the score is DERIVED from the
+        `numeric_bands` ladder, so it is grounded in real data rather than a
+        subjective 1/3/5 pick.
+      * QUALITATIVE — the analyst selects the band (1/3/5) that best matches the
+        evidence, guided by the descriptive band definitions.
     """
+
+    class InputType(models.TextChoices):
+        NUMERIC = "NUMERIC", "Numeric (auto-scored from a figure)"
+        QUALITATIVE = "QUALITATIVE", "Qualitative (band selected from evidence)"
 
     pillar = models.ForeignKey(
         Pillar, on_delete=models.CASCADE, related_name="sub_criteria"
@@ -67,9 +80,53 @@ class SubCriterion(models.Model):
     method_evidence = models.TextField(blank=True)
     order = models.PositiveSmallIntegerField(default=0)
 
+    # Scoring input configuration.
+    input_type = models.CharField(
+        max_length=12, choices=InputType.choices, default=InputType.QUALITATIVE
+    )
+    unit = models.CharField(
+        max_length=24, blank=True,
+        help_text="Unit shown next to a numeric input, e.g. '%', 'years', 'months'.",
+    )
+    higher_is_better = models.BooleanField(
+        default=True,
+        help_text="For numeric sub-criteria: does a larger figure score higher?",
+    )
+    # Ordered ladder of {"score": n, "threshold": x} for NUMERIC sub-criteria.
+    # When higher_is_better, the value earns the score of the highest threshold
+    # it meets; otherwise the lowest threshold it stays under. Empty for
+    # qualitative sub-criteria.
+    numeric_bands = models.JSONField(default=list, blank=True)
+
     class Meta:
         db_table = "sub_criteria"
         ordering = ["pillar__code", "order", "id"]
 
     def __str__(self):
         return f"{self.pillar_id}: {self.name}"
+
+    @property
+    def is_numeric(self):
+        return self.input_type == self.InputType.NUMERIC
+
+    def grade_for_value(self, value):
+        """
+        Derive the 1–5 grade for a measured `value` using `numeric_bands`.
+        Returns 1 if the value clears no threshold. Pure; no side effects.
+        """
+        if value is None or not self.numeric_bands:
+            return None
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return None
+        bands = [b for b in self.numeric_bands if "threshold" in b and "score" in b]
+        if self.higher_is_better:
+            for b in sorted(bands, key=lambda b: b["score"], reverse=True):
+                if value >= float(b["threshold"]):
+                    return int(b["score"])
+        else:
+            for b in sorted(bands, key=lambda b: b["score"], reverse=True):
+                if value <= float(b["threshold"]):
+                    return int(b["score"])
+        return 1

@@ -33,11 +33,14 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#083060] via-[#0A3A74] to-[#0B4FA3] p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-center text-xl">VAP Commercial Platform</CardTitle>
-          <p className="text-center text-sm text-muted-foreground">Sign in to continue</p>
+          <div className="mb-2 flex justify-center">
+            <img src="/del-logo.png" alt="DEL — Decentralised Energy Limited" className="h-14" />
+          </div>
+          <CardTitle className="text-center text-xl text-[#083060]">DEL Commercial Platform</CardTitle>
+          <p className="text-center text-sm text-muted-foreground">Decentralised Energy Limited · Sign in to continue</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

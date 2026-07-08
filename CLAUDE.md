@@ -153,6 +153,36 @@ audit history is correct.
      `finalize_stage1` re-runs as a re-assessment: still-passing just updates the
      flag; a knockout moves STAGE1_PASSED → DECLINED and CLEARS Stage 2 scores
      (`DealSubCriterionScore`/`DealPillarComment`). UI confirms before clearing.
+   Cross-cutting changes (2026-07, ported from the prototype's lifecycle):
+   - **Sales Agent registry** — new `apps/agents/`: `SalesAgent` (external
+     finders; status, agreement date, default fee %). `/api/sales-agents/`
+     (read: any authed; write: assessors). Attribution via
+     `DealIntake.sales_agent` FK (SET_NULL, audited as `sales_agent_id`).
+     `settings.FINDER_PROTECTION_DAYS` (env, default 90) is surfaced in the
+     serializer — display-only, no enforcement yet.
+   - **Expanded intake** — `DealIntake` gained Site & Contacts, Demand Baseline
+     (current supply/tariff/spend/load profile/metering flag), Qualification
+     (expected close, win %, competition, key risks) and attribution fields;
+     all in `AUDITED_FIELDS`.
+   - **Pipeline classification** — `Deal.classification`
+     (ACTIVE/NURTURE/DEFERRED) + `next_review_date` + note, orthogonal to the
+     state machine. `services.classify_deal` (assessors only, non-terminal
+     states, NURTURE/DEFERRED require a review date) writes field history;
+     `/api/deals/:id/classify/`. `settings.PIPELINE_REVIEW_DAYS` (default 90)
+     is the suggested review horizon.
+   - **Handover checklist** — `apps/projects/` `HandoverItem`; a 5-item
+     commercial→delivery pack (`DEFAULT_PACK`) is seeded on project creation;
+     ticking stamps done_by/done_at via `services.set_handover_done`.
+     `/api/handover-items/`.
+   - **Outcome documents** — `apps/deals/reports.py`:
+     `build_screening_memo_pdf` (gate-by-gate Stage 1 record) and
+     `build_decline_letter_pdf` (client-facing letter, reason recovered from
+     state history). `/api/deals/:id/screening-memo/` and `/decline-letter/`
+     (letter only for DECLINED / STAGE2_NO_GO).
+   - Frontend: Sales Agents page (`/agents`), intake form/summary sections for
+     the new fields, `ClassificationPanel` + badges, handover checklist in the
+     Project tab, memo/letter download buttons on the deal detail page.
+
 5. ~~Stage 2 outcome transition~~ — DONE. `decide_stage2` service + IC-only
    `/api/deals/:id/decide_stage2/`: the IC records GO/CONDITIONAL/NO-GO (the
    computed verdict is a recommendation they may override), requires complete

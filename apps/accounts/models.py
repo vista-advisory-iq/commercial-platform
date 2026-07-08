@@ -1,9 +1,11 @@
 """
 User model for the Commercial Operations Platform.
 
-Stage 1 introduces authentication and authorisation with a five-role
-hierarchy (see the Data Model & Audit Specification, Section 2):
-Business Developer, Analyst, Manager, IC Member, Admin.
+Authentication and authorisation use a four-role model (see the Data Model &
+Audit Specification, Section 2): Business Developer, Analyst, Manager, Admin.
+The Investment Committee is not a separate login role — it is the Management
+Investment Committee, represented in the app by the Manager role, who records
+the Stage 2 GO / NO-GO decision.
 """
 import uuid
 from django.contrib.auth.models import AbstractUser
@@ -16,7 +18,6 @@ class Role(models.TextChoices):
     BD = "BD", "Business Developer"
     ANALYST = "ANALYST", "Analyst"
     MANAGER = "MANAGER", "Manager"
-    IC_MEMBER = "IC_MEMBER", "IC Member"
     ADMIN = "ADMIN", "Admin"
 
 
@@ -62,10 +63,6 @@ class User(AbstractUser):
         return self.role == Role.MANAGER
 
     @property
-    def is_ic_member(self):
-        return self.role == Role.IC_MEMBER
-
-    @property
     def can_assess_deals(self):
         """Analysts and Managers may review/assess submitted deals."""
         return self.role in {Role.ANALYST, Role.MANAGER}
@@ -77,8 +74,11 @@ class User(AbstractUser):
 
     @property
     def can_decide_stage2(self):
-        """The Investment Committee records the final Stage 2 GO/NO-GO decision."""
-        return self.role in {Role.IC_MEMBER, Role.ADMIN}
+        """
+        The Management Investment Committee records the final Stage 2 GO/NO-GO
+        decision. The Manager role acts for the committee (Admin retains it too).
+        """
+        return self.role in {Role.MANAGER, Role.ADMIN}
 
     @property
     def can_view_full_pipeline(self):

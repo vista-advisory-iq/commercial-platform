@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Project, Milestone, Risk, ProjectStateHistory
+from .models import Project, Milestone, Risk, ProjectStateHistory, HandoverItem
 
 
 class MilestoneSerializer(serializers.ModelSerializer):
@@ -23,11 +23,24 @@ class RiskSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
+class HandoverItemSerializer(serializers.ModelSerializer):
+    done_by_name = serializers.CharField(source="done_by.full_name", read_only=True, default="")
+
+    class Meta:
+        model = HandoverItem
+        fields = [
+            "id", "project", "name", "done", "done_by_name", "done_at",
+            "notes", "order", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "done_by_name", "done_at", "created_at", "updated_at"]
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     deal_ref = serializers.CharField(source="deal.deal_ref", read_only=True)
     percent_complete = serializers.IntegerField(read_only=True)
     milestones = MilestoneSerializer(many=True, read_only=True)
     risks = RiskSerializer(many=True, read_only=True)
+    handover_items = HandoverItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Project
@@ -35,11 +48,12 @@ class ProjectSerializer(serializers.ModelSerializer):
             "id", "deal", "deal_ref", "proposal", "name", "status", "health",
             "status_note", "planned_start", "planned_end", "actual_start",
             "actual_end", "percent_complete", "milestones", "risks",
-            "created_at", "updated_at",
+            "handover_items", "created_at", "updated_at",
         ]
         read_only_fields = [
             "id", "deal", "deal_ref", "proposal", "name", "status",
-            "percent_complete", "milestones", "risks", "created_at", "updated_at",
+            "percent_complete", "milestones", "risks", "handover_items",
+            "created_at", "updated_at",
         ]
 
 

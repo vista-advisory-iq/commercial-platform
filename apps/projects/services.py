@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.notifications import services as notifications
-from .models import Project, ProjectStatus, ProjectStateHistory
+from .models import Project, ProjectStatus, ProjectStateHistory, HandoverItem
 
 ALLOWED_TRANSITIONS = {
     ProjectStatus.NOT_STARTED: {ProjectStatus.IN_PROGRESS, ProjectStatus.CANCELLED},
@@ -39,6 +39,10 @@ def create_project(deal, actor=None, proposal=None):
     project = Project.objects.create(
         deal=deal, proposal=proposal, created_by=actor, name=name,
     )
+    HandoverItem.objects.bulk_create([
+        HandoverItem(project=project, name=item, order=i)
+        for i, item in enumerate(HandoverItem.DEFAULT_PACK)
+    ])
     _record_state(project, "", actor, reason="Project opened on proposal acceptance.")
     notifications.notify_project(
         deal, [deal.created_by],
@@ -68,6 +72,18 @@ def change_status(project, actor, to_status, reason=""):
         f"Project {project.deal.deal_ref} is now {project.get_status_display()}.",
     )
     return project
+
+
+@transaction.atomic
+def set_handover_done(item, actor, done):
+    """Tick / untick a handover-pack item, stamping who and when."""
+    if not actor.can_assess_deals:
+        raise PermissionDenied("Only an Analyst or Manager may update the handover pack.")
+    item.done = bool(done)
+    item.done_by = actor if item.done else None
+    item.done_at = timezone.now() if item.done else None
+    item.save(update_fields=["done", "done_by", "done_at", "updated_at"])
+    return item
 
 
 @transaction.atomic

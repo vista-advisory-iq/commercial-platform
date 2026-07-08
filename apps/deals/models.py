@@ -19,11 +19,24 @@ class DealState(models.TextChoices):
     UNDER_REVIEW = "UNDER_REVIEW", "Under review"
     REJECTED_TO_BD = "REJECTED_TO_BD", "Rejected to BD"
     STAGE1_PASSED = "STAGE1_PASSED", "Stage 1 passed"
+    # Scoring is done and the analyst has submitted it for the committee's vote.
+    AWAITING_IC_REVIEW = "AWAITING_IC_REVIEW", "Awaiting Management Investment Committee Review"
     DECLINED = "DECLINED", "Declined"
     # Stage 2 committee outcomes (terminal).
     STAGE2_GO = "STAGE2_GO", "Stage 2 — GO"
     STAGE2_CONDITIONAL = "STAGE2_CONDITIONAL", "Stage 2 — Conditional GO"
     STAGE2_NO_GO = "STAGE2_NO_GO", "Stage 2 — NO-GO"
+
+
+class DealClassification(models.TextChoices):
+    """
+    Pipeline classification — orthogonal to lifecycle state. A deal can sit
+    UNDER_REVIEW and still be parked (NURTURE) awaiting a customer decision.
+    Terminal states make classification moot; the service refuses changes then.
+    """
+    ACTIVE = "ACTIVE", "Active"
+    NURTURE = "NURTURE", "Nurture (parked)"
+    DEFERRED = "DEFERRED", "Deferred (external blocker)"
 
 
 class Deal(models.Model):
@@ -64,6 +77,15 @@ class Deal(models.Model):
         choices=[("GO", "GO"), ("CONDITIONAL", "Conditional GO"), ("NO_GO", "NO-GO")],
     )
     stage2_rationale = models.TextField(blank=True)
+    # Pipeline classification (Active / Nurture / Deferred). Changed only via
+    # services.classify_deal so every reclassification is audited; NURTURE and
+    # DEFERRED require a next_review_date (the periodic-review cadence).
+    classification = models.CharField(
+        max_length=10, choices=DealClassification.choices,
+        default=DealClassification.ACTIVE,
+    )
+    next_review_date = models.DateField(null=True, blank=True)
+    classification_note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -77,8 +99,16 @@ class Deal(models.Model):
 
     @property
     def is_editable_by_bd(self):
-        """A BD may edit only while the deal is a draft or was sent back."""
-        return self.state in {DealState.DRAFT, DealState.REJECTED_TO_BD}
+        """
+        A BD may edit while the deal is a draft or was sent back, and also while
+        it is awaiting the committee's decision — intake can still be corrected
+        right up to the vote (every change is audited).
+        """
+        return self.state in {
+            DealState.DRAFT,
+            DealState.REJECTED_TO_BD,
+            DealState.AWAITING_IC_REVIEW,
+        }
 
 
 class DealIntake(models.Model):
@@ -128,6 +158,41 @@ class DealIntake(models.Model):
         max_digits=12, decimal_places=2, null=True, blank=True
     )
 
+    # Site & contacts — captured once at intake so screening (site visits,
+    # decision-chain mapping) needs no second data pass.
+    site_address = models.CharField(max_length=255, blank=True)
+    primary_contact_name = models.CharField(max_length=255, blank=True)
+    primary_contact_email = models.EmailField(blank=True)
+    primary_contact_phone = models.CharField(max_length=32, blank=True)
+    decision_maker = models.CharField(max_length=255, blank=True)
+    approval_process = models.TextField(blank=True)
+
+    # Demand baseline — the evidence Gates 01 and 04 assess against.
+    current_supply = models.CharField(max_length=255, blank=True)
+    current_tariff_ngn_kwh = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    monthly_energy_spend_ngn = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    load_profile = models.TextField(blank=True)
+    metering_data_available = models.BooleanField(null=True, blank=True)
+
+    # Qualification — enables weighted pipeline value and cycle-time KPIs.
+    expected_close_date = models.DateField(null=True, blank=True)
+    win_probability_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    competition = models.TextField(blank=True)
+    key_risks = models.TextField(blank=True)
+
+    # Attribution — who originated the lead. A Sales Agent must exist in the
+    # registry before a deal can name them (register-first rule).
+    sales_agent = models.ForeignKey(
+        "agents.SalesAgent", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="deals",
+    )
+
     # The set of fields the audit layer watches for changes.
     AUDITED_FIELDS = [
         "deal_name", "deal_type", "sub_sector", "client_name",
@@ -136,6 +201,12 @@ class DealIntake(models.Model):
         "proposed_tariff_ngn_kwh", "tenor_years", "revenue_2_3yr_pct",
         "capital_structure", "ebitda_usd_m", "leverage_usd_m",
         "cash_position_usd_m",
+        "site_address", "primary_contact_name", "primary_contact_email",
+        "primary_contact_phone", "decision_maker", "approval_process",
+        "current_supply", "current_tariff_ngn_kwh", "monthly_energy_spend_ngn",
+        "load_profile", "metering_data_available",
+        "expected_close_date", "win_probability_pct", "competition", "key_risks",
+        "sales_agent_id",
     ]
 
     class Meta:
@@ -229,7 +300,9 @@ class DealSubCriterionScore(models.Model):
 
     class Grade(models.IntegerChoices):
         VERY_POOR = 1, "1 — Very Poor"
+        POOR = 2, "2 — Poor"
         MODERATE = 3, "3 — Moderate"
+        GOOD = 4, "4 — Good"
         EXCELLENT = 5, "5 — Excellent"
 
     deal = models.ForeignKey(
@@ -237,6 +310,12 @@ class DealSubCriterionScore(models.Model):
     )
     sub_criterion = models.ForeignKey("screening.SubCriterion", on_delete=models.PROTECT)
     grade = models.PositiveSmallIntegerField(choices=Grade.choices)
+    # For numeric sub-criteria: the measured figure the analyst entered (e.g. an
+    # IRR of 21.5%). The grade is derived from it via the framework bands. Null
+    # for qualitative sub-criteria, where the analyst picks the band directly.
+    measured_value = models.DecimalField(
+        max_digits=14, decimal_places=4, null=True, blank=True
+    )
     notes = models.TextField(blank=True)
     scored_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True

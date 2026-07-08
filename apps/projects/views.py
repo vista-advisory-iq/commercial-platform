@@ -11,10 +11,11 @@ from rest_framework.response import Response
 
 from apps.deals.permissions import CanAssessDeals
 from . import services
-from .models import Project, Milestone, Risk
+from .models import Project, Milestone, Risk, HandoverItem
 from .serializers import (
     ProjectSerializer, ProjectDetailUpdateSerializer,
     ProjectStateHistorySerializer, MilestoneSerializer, RiskSerializer,
+    HandoverItemSerializer,
 )
 
 
@@ -92,3 +93,22 @@ class MilestoneViewSet(_ChildViewSet):
 class RiskViewSet(_ChildViewSet):
     model = Risk
     serializer_class = RiskSerializer
+
+
+class HandoverItemViewSet(_ChildViewSet):
+    """The handover pack. Ticking an item stamps who and when via the service."""
+    model = HandoverItem
+    serializer_class = HandoverItemSerializer
+
+    def partial_update(self, request, *args, **kwargs):
+        item = self.get_object()
+        if "done" in request.data:
+            services.set_handover_done(item, request.user, request.data["done"])
+        # Allow name/notes/order edits through the normal serializer path.
+        other = {k: v for k, v in request.data.items() if k != "done"}
+        if other:
+            serializer = self.get_serializer(item, data=other, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        item.refresh_from_db()
+        return Response(HandoverItemSerializer(item).data)

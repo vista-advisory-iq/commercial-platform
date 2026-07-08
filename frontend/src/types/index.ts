@@ -1,4 +1,4 @@
-export type Role = 'BD' | 'ANALYST' | 'MANAGER' | 'IC_MEMBER' | 'ADMIN'
+export type Role = 'BD' | 'ANALYST' | 'MANAGER' | 'ADMIN'
 
 export interface User {
   id: string
@@ -14,12 +14,30 @@ export type DealState =
   | 'UNDER_REVIEW'
   | 'REJECTED_TO_BD'
   | 'STAGE1_PASSED'
+  | 'AWAITING_IC_REVIEW'
   | 'DECLINED'
   | 'STAGE2_GO'
   | 'STAGE2_CONDITIONAL'
   | 'STAGE2_NO_GO'
 
 export type Stage2Decision = '' | 'GO' | 'CONDITIONAL' | 'NO_GO'
+
+export type DealClassification = 'ACTIVE' | 'NURTURE' | 'DEFERRED'
+
+export interface SalesAgent {
+  id: string
+  name: string
+  company: string
+  email: string
+  phone: string
+  status: 'ACTIVE' | 'SUSPENDED'
+  agreement_signed_on: string | null
+  default_fee_pct: string | null
+  notes: string
+  deal_count: number
+  protection_days: number
+  created_at: string
+}
 
 export interface DealIntake {
   deal_name: string
@@ -40,6 +58,27 @@ export interface DealIntake {
   ebitda_usd_m: string | null
   leverage_usd_m: string | null
   cash_position_usd_m: string | null
+  // Site & contacts
+  site_address: string
+  primary_contact_name: string
+  primary_contact_email: string
+  primary_contact_phone: string
+  decision_maker: string
+  approval_process: string
+  // Demand baseline
+  current_supply: string
+  current_tariff_ngn_kwh: string | null
+  monthly_energy_spend_ngn: string | null
+  load_profile: string
+  metering_data_available: boolean | null
+  // Qualification
+  expected_close_date: string | null
+  win_probability_pct: string | null
+  competition: string
+  key_risks: string
+  // Attribution
+  sales_agent: string | null
+  sales_agent_name: string
 }
 
 export interface DealListItem {
@@ -48,6 +87,8 @@ export interface DealListItem {
   deal_name: string
   state: DealState
   stage1_decision: string
+  classification: DealClassification
+  next_review_date: string | null
   created_by_name: string
   assigned_analyst: string | null
   created_at: string
@@ -64,6 +105,9 @@ export interface Deal {
   created_by: string
   assigned_analyst: string | null
   current_rejection_reason: string
+  classification: DealClassification
+  next_review_date: string | null
+  classification_note: string
   created_at: string
   submitted_at: string | null
   updated_at: string
@@ -105,14 +149,27 @@ export interface GateResult {
   evidence_notes: string
 }
 
-export type Grade = 1 | 3 | 5 | null
+export type Grade = 1 | 2 | 3 | 4 | 5 | null
+
+export type SubInputType = 'NUMERIC' | 'QUALITATIVE'
+
+export interface NumericBand {
+  score: number
+  threshold: number
+}
 
 export interface SubCriterionScore {
   id: number
   name: string
   weight_in_pillar: string
   grade: Grade
+  measured_value: string | null
   notes: string
+  input_type: SubInputType
+  unit: string
+  higher_is_better: boolean
+  numeric_bands: NumericBand[]
+  method_evidence: string
   band_1_def: string
   band_3_def: string
   band_5_def: string
@@ -254,6 +311,18 @@ export interface Project {
   percent_complete: number
   milestones: Milestone[]
   risks: Risk[]
+  handover_items: HandoverItem[]
+}
+
+export interface HandoverItem {
+  id: string
+  project: string
+  name: string
+  done: boolean
+  done_by_name: string
+  done_at: string | null
+  notes: string
+  order: number
 }
 
 export interface ProjectHistoryEntry {

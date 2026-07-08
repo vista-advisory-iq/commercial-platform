@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '@/api/projects'
-import type { Milestone, Risk } from '@/types'
+import type { HandoverItem, Milestone, Risk } from '@/types'
 
 export function useProject(dealId: string) {
   return useQuery({
@@ -45,6 +45,14 @@ export function useMilestoneMutations(dealId: string) {
   const update = useProjectMutation(({ id, data }: { id: string; data: Partial<Milestone> }) => api.updateMilestone(id, data), dealId)
   const remove = useProjectMutation((id: string) => api.deleteMilestone(id), dealId)
   return { create, update, remove }
+}
+
+export function useHandoverMutations(dealId: string) {
+  const update = useProjectMutation(
+    ({ id, data }: { id: string; data: Partial<HandoverItem> }) => api.updateHandoverItem(id, data),
+    dealId,
+  )
+  return { update }
 }
 
 export function useRiskMutations(dealId: string) {

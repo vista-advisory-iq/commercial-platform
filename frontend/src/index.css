@@ -10,7 +10,8 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 221 83% 53%;
+    /* DEL brand: blue #1068D0 · navy #083060 · green #00B050 */
+    --primary: 213 86% 44%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -22,7 +23,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 221 83% 53%;
+    --ring: 213 86% 44%;
     --radius: 0.5rem;
   }
 }

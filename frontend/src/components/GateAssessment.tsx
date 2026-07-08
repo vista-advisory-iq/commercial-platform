@@ -51,7 +51,7 @@ export function GateAssessment({ dealId, dealState, editable = true }: Props) {
   const [confirmClear, setConfirmClear] = useState(false)
 
   // Re-assessing gates after the deal already passed Stage 1.
-  const isReassessment = dealState === 'STAGE1_PASSED'
+  const isReassessment = dealState === 'STAGE1_PASSED' || dealState === 'AWAITING_IC_REVIEW'
 
   useEffect(() => {
     if (serverGates) setGates(serverGates)

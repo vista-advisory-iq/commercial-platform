@@ -10,6 +10,7 @@ import { DealDetailPage } from '@/pages/DealDetailPage'
 import { AnalystQueuePage } from '@/pages/AnalystQueuePage'
 import { AllDealsPage } from '@/pages/AllDealsPage'
 import { EditRequestsPage } from '@/pages/EditRequestsPage'
+import { AgentsPage } from '@/pages/AgentsPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -65,7 +66,7 @@ export default function App() {
             <Route
               path="/queue"
               element={
-                <ProtectedRoute allowedRoles={['ANALYST', 'MANAGER', 'IC_MEMBER', 'ADMIN']}>
+                <ProtectedRoute allowedRoles={['ANALYST', 'MANAGER', 'ADMIN']}>
                   <Layout><AnalystQueuePage /></Layout>
                 </ProtectedRoute>
               }
@@ -73,7 +74,7 @@ export default function App() {
             <Route
               path="/all-deals"
               element={
-                <ProtectedRoute allowedRoles={['ANALYST', 'MANAGER', 'IC_MEMBER', 'ADMIN']}>
+                <ProtectedRoute allowedRoles={['ANALYST', 'MANAGER', 'ADMIN']}>
                   <Layout><AllDealsPage /></Layout>
                 </ProtectedRoute>
               }
@@ -83,6 +84,15 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['ANALYST', 'MANAGER']}>
                   <Layout><EditRequestsPage /></Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/agents"
+              element={
+                <ProtectedRoute>
+                  <Layout><AgentsPage /></Layout>
                 </ProtectedRoute>
               }
             />

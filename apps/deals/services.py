@@ -20,7 +20,8 @@ from apps.audit.services import record_state_change, record_field_changes
 from apps.notifications import services as notifications
 from apps.screening.models import KnockoutGate
 from .models import (
-    Deal, DealState, DealGateResult, DealSubCriterionScore, DealPillarComment,
+    Deal, DealState, DealClassification, DealGateResult, DealSubCriterionScore,
+    DealPillarComment,
 )
 
 # Allowed transitions: current state -> set of permitted next states.
@@ -34,10 +35,14 @@ ALLOWED_TRANSITIONS = {
     },
     DealState.REJECTED_TO_BD: {DealState.SUBMITTED},
     DealState.STAGE1_PASSED: {
+        DealState.AWAITING_IC_REVIEW,  # analyst submits completed scoring to the committee
+        DealState.DECLINED,            # re-assessing Stage 1 gates can knock the deal out
+    },
+    DealState.AWAITING_IC_REVIEW: {
         DealState.STAGE2_GO,
         DealState.STAGE2_CONDITIONAL,
         DealState.STAGE2_NO_GO,
-        DealState.DECLINED,  # re-assessing Stage 1 gates can knock the deal out
+        DealState.DECLINED,  # a late Stage 1 re-assessment can still knock it out
     },
     DealState.DECLINED: set(),            # terminal
     DealState.STAGE2_GO: set(),           # terminal
@@ -165,10 +170,13 @@ def save_gate_results(deal, actor, results):
     """
     if not actor.can_assess_deals:
         raise PermissionDenied("Only an Analyst or Manager may assess gates.")
-    # Gates stay editable through Stage 1 review and after passing (during Stage 2),
-    # so a re-assessment can revise the knockout outcome.
-    if deal.state not in (DealState.UNDER_REVIEW, DealState.STAGE1_PASSED):
-        raise TransitionError("Gates can only be assessed during review or Stage 1.")
+    # Gates stay editable through Stage 1 review, after passing (during Stage 2
+    # scoring), and while awaiting the committee — so a re-assessment can revise
+    # the knockout outcome at any point before the final decision.
+    if deal.state not in (
+        DealState.UNDER_REVIEW, DealState.STAGE1_PASSED, DealState.AWAITING_IC_REVIEW,
+    ):
+        raise TransitionError("Gates can only be assessed before the committee's decision.")
 
     changes = {}
     for item in results:
@@ -250,9 +258,12 @@ def finalize_stage1(deal, actor):
         raise PermissionDenied("Only an Analyst or Manager may record a Stage 1 decision.")
     to_state, decision, reason = derive_stage1_outcome(deal)
     previous = deal.state
+    # States from which Stage 1 can be re-assessed after it first passed.
+    post_pass = {DealState.STAGE1_PASSED, DealState.AWAITING_IC_REVIEW}
 
-    # Re-assessment that still passes: update the decision flag in place.
-    if previous == DealState.STAGE1_PASSED and to_state == DealState.STAGE1_PASSED:
+    # Re-assessment that still passes: update the decision flag in place, keeping
+    # the deal wherever it currently sits in Stage 2.
+    if previous in post_pass and to_state == DealState.STAGE1_PASSED:
         deal.stage1_decision = decision
         deal.save(update_fields=["stage1_decision", "updated_at"])
         record_state_change(deal, previous, deal.state, reason=f"Stage 1 re-assessed: {reason}", actor=actor)
@@ -261,7 +272,7 @@ def finalize_stage1(deal, actor):
 
     _guard(deal, to_state)
     cleared = False
-    if previous == DealState.STAGE1_PASSED and to_state == DealState.DECLINED:
+    if previous in post_pass and to_state == DealState.DECLINED:
         # The knockout now fails after Stage 2 had begun — discard Stage 2 work.
         DealSubCriterionScore.objects.filter(deal=deal).delete()
         DealPillarComment.objects.filter(deal=deal).delete()
@@ -278,18 +289,47 @@ def finalize_stage1(deal, actor):
 
 
 @transaction.atomic
+def submit_stage2_for_review(deal, actor):
+    """
+    The analyst submits completed Stage 2 scoring to the Management Investment
+    Committee. Moves STAGE1_PASSED -> AWAITING_IC_REVIEW and alerts the managers
+    who sit on the committee. Scoring and intake stay editable in the new state,
+    so the analyst or BD can still correct details before the vote.
+    """
+    from . import scoring
+
+    if not actor.can_assess_deals:
+        raise PermissionDenied("Only an Analyst or Manager may submit scoring for committee review.")
+    result = scoring.compute_scores(deal)
+    if not result["complete"]:
+        raise TransitionError("Score every sub-criterion before submitting for committee review.")
+
+    _guard(deal, DealState.AWAITING_IC_REVIEW)
+    previous = deal.state
+    deal.state = DealState.AWAITING_IC_REVIEW
+    deal.save(update_fields=["state", "updated_at"])
+    record_state_change(
+        deal, previous, deal.state,
+        reason="Stage 2 scoring submitted for Management Investment Committee review.",
+        actor=actor,
+    )
+    notifications.notify_stage2_submitted(deal)
+    return deal
+
+
+@transaction.atomic
 def decide_stage2(deal, actor, decision, rationale=""):
     """
-    Record the Investment Committee's final Stage 2 decision and move the deal
-    to its terminal state. The computed weighted-total verdict is a
-    *recommendation*; the IC may accept or override it, so the decision is an
-    explicit input rather than derived. Requires complete scoring.
+    Record the Management Investment Committee's final Stage 2 decision and move
+    the deal to its terminal state. The computed weighted-total verdict is a
+    *recommendation*; the committee may accept or override it, so the decision is
+    an explicit input rather than derived. Requires complete scoring.
     """
     # Imported here to avoid a circular import (scoring imports from services).
     from . import scoring
 
     if not actor.can_decide_stage2:
-        raise PermissionDenied("Only an IC member may record the Stage 2 decision.")
+        raise PermissionDenied("Only the Management Investment Committee (Manager) may record the Stage 2 decision.")
     if decision not in _STAGE2_STATE:
         raise TransitionError(f"Invalid Stage 2 decision {decision!r}.")
 
@@ -307,13 +347,65 @@ def decide_stage2(deal, actor, decision, rationale=""):
 
     recommended = result["verdict"]
     note = (
-        f"IC decision: {_STAGE2_LABEL[decision]} "
+        f"Committee decision: {_STAGE2_LABEL[decision]} "
         f"(score {result['weighted_total']}, recommendation {_STAGE2_LABEL.get(recommended, 'n/a')})."
     )
     if deal.stage2_rationale:
         note += f" Rationale: {deal.stage2_rationale}"
     record_state_change(deal, previous, deal.state, reason=note, actor=actor)
     notifications.notify_stage2_decided(deal)
+    return deal
+
+
+# Lifecycle states in which classification no longer means anything.
+_TERMINAL_STATES = {
+    DealState.DECLINED, DealState.STAGE2_GO,
+    DealState.STAGE2_CONDITIONAL, DealState.STAGE2_NO_GO,
+}
+
+
+@transaction.atomic
+def classify_deal(deal, actor, classification, note="", next_review_date=None):
+    """
+    Reclassify a deal in the pipeline (Active / Nurture / Deferred).
+
+    Classification is orthogonal to lifecycle state — parking a deal does not
+    move the state machine — but every change is audited via field history.
+    Rules:
+      * only an assessor (Analyst/Manager) may classify;
+      * terminal deals cannot be reclassified;
+      * NURTURE and DEFERRED require a next_review_date (the periodic-review
+        cadence: parked deals must come back for a forced decision);
+      * ACTIVE clears the review date.
+    """
+    if not actor.can_assess_deals:
+        raise PermissionDenied("Only an Analyst or Manager may classify deals.")
+    if classification not in DealClassification.values:
+        raise TransitionError(f"Invalid classification {classification!r}.")
+    if deal.state in _TERMINAL_STATES:
+        raise TransitionError("A decided deal can no longer be reclassified.")
+    if classification in (DealClassification.NURTURE, DealClassification.DEFERRED):
+        if not next_review_date:
+            raise TransitionError(
+                "A next review date is required when parking or deferring a deal."
+            )
+    else:
+        next_review_date = None
+
+    changes = {}
+    if deal.classification != classification:
+        changes["classification"] = (deal.classification, classification)
+    if deal.next_review_date != next_review_date:
+        changes["next_review_date"] = (deal.next_review_date, next_review_date)
+
+    deal.classification = classification
+    deal.next_review_date = next_review_date
+    deal.classification_note = (note or "").strip()
+    deal.save(update_fields=[
+        "classification", "next_review_date", "classification_note", "updated_at",
+    ])
+    if changes:
+        record_field_changes(deal, "classification", changes, actor=actor)
     return deal
 
 

@@ -6,6 +6,7 @@ reject, decide) rather than letting clients PATCH `state` directly — state is
 owned by the lifecycle service. Visibility is filtered by role so a BD only
 ever sees their own deals.
 """
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -24,6 +25,7 @@ from .serializers import (
     EditAccessRequestSerializer, GateResultInputSerializer,
     SubScoreInputSerializer, PillarCommentInputSerializer,
     Stage2DecisionInputSerializer, DealCommentSerializer,
+    ClassificationInputSerializer,
 )
 
 
@@ -133,9 +135,17 @@ class DealViewSet(viewsets.ModelViewSet):
             deal = self.get_object()  # enforces deal visibility
         return Response(scoring_engine.compute_scores(deal))
 
+    @action(detail=True, methods=["post"], url_path="submit-for-review",
+            permission_classes=[CanAssessDeals])
+    def submit_for_review(self, request, pk=None):
+        """Analyst submits completed scoring to the Management Investment Committee."""
+        deal = get_object_or_404(Deal, pk=pk)
+        services.submit_stage2_for_review(deal, request.user)
+        return Response(DealDetailSerializer(deal, context={"request": request}).data)
+
     @action(detail=True, methods=["post"], permission_classes=[CanDecideStage2])
     def decide_stage2(self, request, pk=None):
-        """Record the IC's final Stage 2 GO / CONDITIONAL / NO-GO decision."""
+        """Record the committee's final Stage 2 GO / CONDITIONAL / NO-GO decision."""
         deal = get_object_or_404(Deal, pk=pk)
         serializer = Stage2DecisionInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -145,6 +155,88 @@ class DealViewSet(viewsets.ModelViewSet):
             serializer.validated_data.get("rationale", ""),
         )
         return Response(DealDetailSerializer(deal, context={"request": request}).data)
+
+    # --- Pipeline classification ---------------------------------------------
+    @action(detail=True, methods=["post"], permission_classes=[CanAssessDeals])
+    def classify(self, request, pk=None):
+        """
+        Reclassify the deal (ACTIVE / NURTURE / DEFERRED). Parking requires a
+        next review date; the change is audited but does not move the state
+        machine.
+        """
+        deal = get_object_or_404(Deal, pk=pk)
+        serializer = ClassificationInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.classify_deal(
+            deal, request.user,
+            serializer.validated_data["classification"],
+            note=serializer.validated_data.get("note", ""),
+            next_review_date=serializer.validated_data.get("next_review_date"),
+        )
+        return Response(DealDetailSerializer(deal, context={"request": request}).data)
+
+    # --- Standard screening documents -----------------------------------------
+    @action(detail=True, methods=["get"], url_path="screening-memo")
+    def screening_memo(self, request, pk=None):
+        """
+        Knockout screening memo (MTN-memo style): intake summary, per-gate
+        verdicts with evidence, and the Stage 1 outcome. Available once at
+        least one gate has a verdict.
+        """
+        deal = self.get_object()
+        if not deal.gate_results.exists():
+            return Response(
+                {"detail": "No gate verdicts recorded yet — nothing to memo."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from . import reports
+        content = reports.build_screening_memo_pdf(deal)
+        resp = HttpResponse(content, content_type="application/pdf")
+        resp["Content-Disposition"] = f'attachment; filename="{deal.deal_ref}-screening-memo.pdf"'
+        return resp
+
+    @action(detail=True, methods=["get"], url_path="decline-letter")
+    def decline_letter(self, request, pk=None):
+        """
+        Formal decline letter for the client, generated from the logged decline
+        rationale. Only for deals the process has declined (Stage 1 knockout or
+        a Stage 2 NO-GO).
+        """
+        deal = self.get_object()
+        if deal.state not in (DealState.DECLINED, DealState.STAGE2_NO_GO):
+            return Response(
+                {"detail": "A decline letter only exists for a declined deal."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from . import reports
+        content = reports.build_decline_letter_pdf(deal)
+        resp = HttpResponse(content, content_type="application/pdf")
+        resp["Content-Disposition"] = f'attachment; filename="{deal.deal_ref}-decline-letter.pdf"'
+        return resp
+
+    # --- Management Investment Committee report ------------------------------
+    @action(detail=True, methods=["get"])
+    def report(self, request, pk=None):
+        """
+        Download a committee-ready dossier of everything that has happened on the
+        deal (intake, Stage 1 gates, Stage 2 scoring, decision, audit trail).
+        `?fmt=pdf` (default) or `?fmt=docx`. (Not `format` — that query param is
+        reserved by DRF content negotiation and would 404 before this runs.)
+        """
+        deal = self.get_object()  # enforces visibility
+        fmt = (request.query_params.get("fmt") or "pdf").lower()
+        from . import reports
+        if fmt == "docx":
+            content = reports.build_docx(deal)
+            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ext = "docx"
+        else:
+            content = reports.build_pdf(deal)
+            content_type = "application/pdf"
+            ext = "pdf"
+        resp = HttpResponse(content, content_type=content_type)
+        resp["Content-Disposition"] = f'attachment; filename="{deal.deal_ref}-committee-report.{ext}"'
+        return resp
 
     # --- Deal discussion (BD <-> assessors Q&A) ------------------------------
     @action(detail=True, methods=["get", "post"])

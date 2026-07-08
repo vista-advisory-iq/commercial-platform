@@ -49,6 +49,22 @@ export function useSubmitDeal() {
   })
 }
 
+export function useClassifyDeal(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ classification, note, nextReviewDate }: {
+      classification: 'ACTIVE' | 'NURTURE' | 'DEFERRED'
+      note: string
+      nextReviewDate: string | null
+    }) => api.classifyDeal(id, classification, note, nextReviewDate),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['deal', id] })
+      qc.invalidateQueries({ queryKey: ['deal-history', id] })
+      qc.invalidateQueries({ queryKey: ['deals'] })
+    },
+  })
+}
+
 export function useTakeDeal() {
   const qc = useQueryClient()
   return useMutation({
@@ -102,6 +118,18 @@ export function useFinalizeStage1() {
 
 export function useScoring(id: string) {
   return useQuery({ queryKey: ['deal-scoring', id], queryFn: () => api.getScoring(id), enabled: !!id })
+}
+
+export function useSubmitForReview() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.submitForReview(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['deal', id] })
+      qc.invalidateQueries({ queryKey: ['deal-history', id] })
+      qc.invalidateQueries({ queryKey: ['deals'] })
+    },
+  })
 }
 
 export function useDecideStage2() {

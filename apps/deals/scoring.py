@@ -1,9 +1,15 @@
 """
 Stage 2 pillar scoring engine (Data Model & Audit Specification, Section 4.6).
 
-Sub-criterion grades (1/3/5) roll up to a pillar score, and the weighted pillar
+Sub-criterion grades (1–5) roll up to a pillar score, and the weighted pillar
 scores roll up to an overall weighted total on a 0–100 scale. Pillars are never
 graded directly (CLAUDE.md convention 7).
+
+Grades come from two kinds of sub-criterion (framework slides 7–11):
+  * NUMERIC — the analyst enters a measured figure and the grade is DERIVED from
+    the sub-criterion's `numeric_bands` ladder, so the pillar score reflects real
+    data rather than a subjective 1/3/5 pick.
+  * QUALITATIVE — the analyst selects the band directly from the evidence.
 
 The final GO / CONDITIONAL / NO-GO bands are an open item pending DEL sign-off
 (two framework slides disagree: 80/65 vs 75/60), so they are NOT hardcoded here:
@@ -18,12 +24,11 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
 from apps.audit.services import record_field_changes
-from apps.notifications import services as notifications
 from apps.screening.models import Pillar, SubCriterion
 from .models import DealState, DealSubCriterionScore, DealPillarComment
 from .services import TransitionError
 
-VALID_GRADES = {1, 3, 5}
+VALID_GRADES = {1, 2, 3, 4, 5}
 
 
 def compute_scores(deal):
@@ -58,7 +63,13 @@ def compute_scores(deal):
                 "name": sc.name,
                 "weight_in_pillar": str(sc.weight_in_pillar),
                 "grade": grade,
+                "measured_value": (str(g.measured_value) if g and g.measured_value is not None else None),
                 "notes": g.notes if g else "",
+                "input_type": sc.input_type,
+                "unit": sc.unit,
+                "higher_is_better": sc.higher_is_better,
+                "numeric_bands": sc.numeric_bands,
+                "method_evidence": sc.method_evidence,
                 "band_1_def": sc.band_1_def,
                 "band_3_def": sc.band_3_def,
                 "band_5_def": sc.band_5_def,
@@ -127,20 +138,41 @@ def save_scores(deal, actor, grades, comments=None):
     """
     if not actor.can_assess_deals:
         raise PermissionDenied("Only an Analyst or Manager may score deals.")
-    if deal.state != DealState.STAGE1_PASSED:
+    # Scoring is open once Stage 1 passes and stays editable while the deal is
+    # awaiting the committee, so the analyst can revise figures before the vote.
+    if deal.state not in (DealState.STAGE1_PASSED, DealState.AWAITING_IC_REVIEW):
         raise TransitionError("Scoring is available only after Stage 1 has passed.")
 
     changes = {}
     for item in grades:
-        grade = item["grade"]
-        if grade not in VALID_GRADES:
-            raise TransitionError(f"Grade must be 1, 3, or 5 (got {grade!r}).")
         sc = SubCriterion.objects.get(id=item["sub_criterion"])
+        measured = item.get("measured_value")
+        if measured in ("", None):
+            measured = None
+
+        if sc.is_numeric:
+            # The grade is derived from the measured figure, not entered.
+            if measured is None:
+                raise TransitionError(f"Enter a figure for '{sc.name}'.")
+            grade = sc.grade_for_value(measured)
+            if grade is None:
+                raise TransitionError(f"'{sc.name}' has no scoring bands configured.")
+        else:
+            grade = item.get("grade")
+            measured = None  # qualitative sub-criteria carry no figure
+            if grade not in VALID_GRADES:
+                raise TransitionError(f"Grade must be between 1 and 5 (got {grade!r}).")
+
         existing = DealSubCriterionScore.objects.filter(deal=deal, sub_criterion=sc).first()
         old = existing.grade if existing else None
         DealSubCriterionScore.objects.update_or_create(
             deal=deal, sub_criterion=sc,
-            defaults={"grade": grade, "notes": (item.get("notes") or "").strip(), "scored_by": actor},
+            defaults={
+                "grade": grade,
+                "measured_value": measured,
+                "notes": (item.get("notes") or "").strip(),
+                "scored_by": actor,
+            },
         )
         if old != grade:
             changes[f"subscore_{sc.id}"] = (old, grade)
@@ -154,8 +186,4 @@ def save_scores(deal, actor, grades, comments=None):
 
     if changes:
         record_field_changes(deal, "sub_score", changes, actor=actor)
-
-    # Once every sub-criterion is graded, let the committee know it's ready.
-    if compute_scores(deal)["complete"]:
-        notifications.notify_scoring_ready(deal)
     return deal

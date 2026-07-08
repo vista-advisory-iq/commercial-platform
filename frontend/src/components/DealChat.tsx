@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Send } from 'lucide-react'
 
 const ROLE_LABELS: Record<string, string> = {
-  BD: 'BD', ANALYST: 'Analyst', MANAGER: 'Manager', IC_MEMBER: 'IC', ADMIN: 'Admin',
+  BD: 'BD', ANALYST: 'Analyst', MANAGER: 'Manager', ADMIN: 'Admin',
 }
 
 export function DealChat({ dealId }: { dealId: string }) {

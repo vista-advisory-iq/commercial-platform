@@ -24,6 +24,31 @@ const ECONOMICS: [keyof DealIntake, string][] = [
   ['cash_position_usd_m', 'Cash position (USD m)'],
 ]
 
+const SITE_CONTACTS: [keyof DealIntake, string][] = [
+  ['site_address', 'Site address'],
+  ['primary_contact_name', 'Primary contact'],
+  ['primary_contact_email', 'Contact email'],
+  ['primary_contact_phone', 'Contact phone'],
+  ['decision_maker', 'Decision maker'],
+  ['approval_process', 'Approval process'],
+]
+
+const DEMAND: [keyof DealIntake, string][] = [
+  ['current_supply', 'Current supply'],
+  ['current_tariff_ngn_kwh', 'Current tariff (NGN/kWh)'],
+  ['monthly_energy_spend_ngn', 'Monthly energy spend (NGN)'],
+  ['load_profile', 'Load profile'],
+  ['metering_data_available', 'Metering data available'],
+]
+
+const QUALIFICATION: [keyof DealIntake, string][] = [
+  ['expected_close_date', 'Expected close date'],
+  ['win_probability_pct', 'Win probability (%)'],
+  ['competition', 'Competition'],
+  ['key_risks', 'Key risks'],
+  ['sales_agent_name', 'Sales agent'],
+]
+
 function Rows({ intake, fields }: { intake: DealIntake; fields: [keyof DealIntake, string][] }) {
   return (
     <dl className="divide-y">
@@ -33,7 +58,9 @@ function Rows({ intake, fields }: { intake: DealIntake; fields: [keyof DealIntak
           <div key={key} className="flex gap-3 py-1.5 text-sm">
             <dt className="w-40 shrink-0 text-muted-foreground">{label}</dt>
             <dd className="font-medium break-words">
-              {v === null || v === '' || v === undefined ? <span className="text-muted-foreground">—</span> : String(v)}
+              {v === null || v === '' || v === undefined
+                ? <span className="text-muted-foreground">—</span>
+                : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)}
             </dd>
           </div>
         )
@@ -54,6 +81,18 @@ export function DealIntakeSummary({ intake }: { intake: DealIntake | null | unde
       <section>
         <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Economics</h4>
         <Rows intake={intake} fields={ECONOMICS} />
+      </section>
+      <section>
+        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Site &amp; Contacts</h4>
+        <Rows intake={intake} fields={SITE_CONTACTS} />
+      </section>
+      <section>
+        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Demand Baseline</h4>
+        <Rows intake={intake} fields={DEMAND} />
+      </section>
+      <section>
+        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Qualification &amp; Attribution</h4>
+        <Rows intake={intake} fields={QUALIFICATION} />
       </section>
     </div>
   )

@@ -1,6 +1,6 @@
 import client from './client'
 import type {
-  Project, ProjectHistoryEntry, Milestone, Risk, Health, PaginatedResponse,
+  Project, ProjectHistoryEntry, Milestone, Risk, Health, HandoverItem, PaginatedResponse,
 } from '@/types'
 
 export async function getProjectForDeal(dealId: string): Promise<Project | null> {
@@ -54,4 +54,9 @@ export async function updateRisk(id: string, data: Partial<Risk>): Promise<Risk>
 }
 export async function deleteRisk(id: string): Promise<void> {
   await client.delete(`/risks/${id}/`)
+}
+
+export async function updateHandoverItem(id: string, data: Partial<HandoverItem>): Promise<HandoverItem> {
+  const res = await client.patch(`/handover-items/${id}/`, data)
+  return res.data
 }

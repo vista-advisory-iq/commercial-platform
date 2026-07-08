@@ -49,7 +49,7 @@ export function Stage2DecisionPanel({ dealId }: { dealId: string }) {
   return (
     <Card className="border-primary/40">
       <CardHeader>
-        <CardTitle className="text-base">Investment Committee Decision</CardTitle>
+        <CardTitle className="text-base">Management Investment Committee Decision</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!complete ? (

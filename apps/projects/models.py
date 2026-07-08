@@ -131,6 +131,45 @@ class Risk(models.Model):
         return f"{self.project_id}: {self.get_kind_display()} ({self.severity})"
 
 
+class HandoverItem(models.Model):
+    """
+    One item of the BD → Commercial Operations handover pack, checked off at
+    contract signing / delivery start. The default pack is seeded when the
+    project is created (see services.create_project); assessors may add
+    deal-specific items.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="handover_items")
+    name = models.CharField(max_length=255)
+    done = models.BooleanField(default=False)
+    done_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="handover_items_done",
+    )
+    done_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # The standard pack (prototype gap 19) — adopted as the default checklist.
+    DEFAULT_PACK = [
+        "Signed contract & annexes",
+        "Tariff & escalation schedule",
+        "KYC / credit file",
+        "Metering & billing plan",
+        "Customer contacts & escalation points",
+    ]
+
+    class Meta:
+        db_table = "project_handover_items"
+        ordering = ["order", "created_at"]
+
+    def __str__(self):
+        return f"{self.project_id}: {self.name} ({'done' if self.done else 'open'})"
+
+
 class ProjectStateHistory(models.Model):
     """Append-only lifecycle timeline for a project."""
 

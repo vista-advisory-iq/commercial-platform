@@ -84,25 +84,24 @@ def notify_stage1_decided(deal):
 
 
 def notify_stage2_decided(deal):
-    """Investment Committee recorded the final decision — tell the BD."""
+    """Management Investment Committee recorded the final decision — tell the BD."""
     labels = {"GO": "GO", "CONDITIONAL": "Conditional GO", "NO_GO": "NO-GO"}
     label = labels.get(deal.stage2_decision, deal.stage2_decision or "decided")
     msg = f"{deal.deal_ref} ({_deal_name(deal)}) — final committee decision: {label}."
     return _emit([deal.created_by], deal, Notification.Kind.STAGE2_DECISION, msg)
 
 
-def notify_scoring_ready(deal):
+def notify_stage2_submitted(deal):
     """
-    Stage 2 scoring is complete — alert the Investment Committee that the deal is
-    ready for their decision. Sent once per deal (guarded against re-sends on
-    every subsequent save).
+    The analyst submitted completed Stage 2 scoring — alert the Management
+    Investment Committee (the managers) that the deal is ready for their vote.
     """
-    if Notification.objects.filter(deal=deal, kind=Notification.Kind.SCORING_READY).exists():
-        return []
     User = get_user_model()
-    recipients = list(User.objects.filter(role=Role.IC_MEMBER, is_active=True))
-    msg = f"{deal.deal_ref} ({_deal_name(deal)}) has completed Stage 2 scoring and is ready for the committee decision."
-    return _emit(recipients, deal, Notification.Kind.SCORING_READY, msg)
+    recipients = list(User.objects.filter(role__in=[Role.MANAGER, Role.ADMIN], is_active=True))
+    msg = (f"{deal.deal_ref} ({_deal_name(deal)}) has completed Stage 2 scoring and is "
+           f"awaiting the Management Investment Committee's decision.")
+    return _emit(recipients, deal, Notification.Kind.SCORING_READY, msg,
+                 subject=f"[VAP] Deal {deal.deal_ref} awaiting committee decision")
 
 
 def notify_edit_requested(edit_request):

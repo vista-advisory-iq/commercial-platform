@@ -25,7 +25,7 @@ export function MyDealsPage() {
       {error && <p className="text-destructive text-sm">Failed to load deals.</p>}
 
       {data && (
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="text-left text-xs uppercase text-muted-foreground">

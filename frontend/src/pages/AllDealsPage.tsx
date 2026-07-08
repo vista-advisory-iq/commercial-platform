@@ -13,7 +13,11 @@ const STATE_FILTERS: { value: 'ALL' | DealState; label: string }[] = [
   { value: 'UNDER_REVIEW', label: 'Under Review' },
   { value: 'REJECTED_TO_BD', label: 'Returned' },
   { value: 'STAGE1_PASSED', label: 'Stage 1 Passed' },
+  { value: 'AWAITING_IC_REVIEW', label: 'Awaiting Committee' },
   { value: 'DECLINED', label: 'Declined' },
+  { value: 'STAGE2_GO', label: 'Stage 2 — GO' },
+  { value: 'STAGE2_CONDITIONAL', label: 'Stage 2 — Conditional' },
+  { value: 'STAGE2_NO_GO', label: 'Stage 2 — NO-GO' },
 ]
 
 export function AllDealsPage() {
@@ -73,7 +77,7 @@ export function AllDealsPage() {
       {isLoading && <p className="text-muted-foreground">Loading…</p>}
       {error && <p className="text-destructive text-sm">Failed to load deals.</p>}
 
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="text-left text-xs uppercase text-muted-foreground">
@@ -102,7 +106,13 @@ export function AllDealsPage() {
                     {deal.deal_name || <span className="italic text-muted-foreground">Untitled</span>}
                   </Link>
                 </td>
-                <td className="px-4 py-3"><DealStateBadge state={deal.state} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <DealStateBadge state={deal.state} />
+                    {deal.classification === 'NURTURE' && <Badge className="bg-amber-100 text-amber-800">Nurture</Badge>}
+                    {deal.classification === 'DEFERRED' && <Badge className="bg-slate-200 text-slate-700">Deferred</Badge>}
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   {deal.stage1_decision === 'PASSED' && <Badge variant="success">Passed</Badge>}
                   {deal.stage1_decision === 'CONDITIONAL' && <Badge variant="warning">Conditional</Badge>}

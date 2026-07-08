@@ -40,7 +40,7 @@ export function AnalystQueuePage() {
       {error && <p className="text-destructive text-sm">Failed to load queue.</p>}
       {actionError && <p className="mb-4 text-sm text-destructive">{actionError}</p>}
 
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="text-left text-xs uppercase text-muted-foreground">

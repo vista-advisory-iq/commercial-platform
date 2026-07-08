@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useDeal, useDealHistory, useRejectDeal, useSubmitDeal, useTakeDeal, useRequestEdit } from '@/hooks/useDeals'
+import { useDeal, useDealHistory, useRejectDeal, useSubmitDeal, useTakeDeal, useRequestEdit, useSubmitForReview } from '@/hooks/useDeals'
+import { downloadDeclineLetter, downloadReport, downloadScreeningMemo } from '@/api/deals'
 import { useAuth } from '@/hooks/useAuth'
 import { DealStateBadge } from '@/components/DealStateBadge'
 import { DealIntakeForm } from '@/components/DealIntakeForm'
@@ -8,17 +9,19 @@ import { DealIntakeSummary } from '@/components/DealIntakeSummary'
 import { AuditTimeline } from '@/components/AuditTimeline'
 import { RejectModal } from '@/components/RejectModal'
 import { GateAssessment } from '@/components/GateAssessment'
+import { PillarMechanics } from '@/components/PillarMechanics'
 import { ScoringPanel } from '@/components/ScoringPanel'
 import { Stage2DecisionPanel } from '@/components/Stage2DecisionPanel'
 import { ProposalPanel } from '@/components/ProposalPanel'
 import { ProjectPanel } from '@/components/ProjectPanel'
 import { DealChat } from '@/components/DealChat'
+import { ClassificationBadge, ClassificationPanel } from '@/components/ClassificationPanel'
 import { CostModelPanel } from '@/components/CostModelPanel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Edit, Send } from 'lucide-react'
+import { ArrowLeft, Edit, Send, FileText, FileDown } from 'lucide-react'
 
 export function DealDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -30,33 +33,44 @@ export function DealDetailPage() {
   const rejectDeal = useRejectDeal()
   const submitDeal = useSubmitDeal()
   const requestEdit = useRequestEdit()
+  const submitForReview = useSubmitForReview()
 
   const [rejectOpen, setRejectOpen] = useState(false)
   const [editJustification, setEditJustification] = useState('')
   const [showEditRequest, setShowEditRequest] = useState(false)
   const [actionError, setActionError] = useState('')
+  const [downloading, setDownloading] = useState<'pdf' | 'docx' | null>(null)
+  const [docDownloading, setDocDownloading] = useState<'memo' | 'letter' | null>(null)
 
   if (isLoading) return <p className="p-8 text-muted-foreground">Loading…</p>
   if (error || !deal) return <p className="p-8 text-destructive">Deal not found.</p>
 
   const isBD = user?.role === 'BD'
   const canAssess = user?.role === 'ANALYST' || user?.role === 'MANAGER'
-  const canDecideStage2 = user?.role === 'IC_MEMBER' || user?.role === 'ADMIN'
+  // The Management Investment Committee (Manager) — plus Admin — records the vote.
+  const canDecideStage2 = user?.role === 'MANAGER' || user?.role === 'ADMIN'
   const isOwnDeal = deal.created_by === user?.id
 
   const STAGE2_STATES = ['STAGE2_GO', 'STAGE2_CONDITIONAL', 'STAGE2_NO_GO']
   const isStage2Decided = STAGE2_STATES.includes(deal.state)
+  const awaitingCommittee = deal.state === 'AWAITING_IC_REVIEW'
   // Everyone can view Stage 1 gates and Stage 2 scoring once they exist (read-only
   // for non-assessors). Gates exist once a deal is taken; scoring once Stage 1 passes.
-  const showGates = ['UNDER_REVIEW', 'STAGE1_PASSED', 'DECLINED', ...STAGE2_STATES].includes(deal.state)
-  const showScoring = deal.state === 'STAGE1_PASSED' || isStage2Decided
+  const showGates = ['UNDER_REVIEW', 'STAGE1_PASSED', 'AWAITING_IC_REVIEW', 'DECLINED', ...STAGE2_STATES].includes(deal.state)
+  const showScoring = deal.state === 'STAGE1_PASSED' || awaitingCommittee || isStage2Decided
   // A proposal can exist once the deal is a GO (or Conditional GO).
   const showProposal = deal.state === 'STAGE2_GO' || deal.state === 'STAGE2_CONDITIONAL'
   // Assessors get a side-by-side workspace (intake left, assessment right) so
-  // they don't scroll between the deal details and the verdict/scoring.
-  const assessmentMode = canAssess && (deal.state === 'UNDER_REVIEW' || deal.state === 'STAGE1_PASSED')
+  // they don't scroll between the deal details and the verdict/scoring. Scoring
+  // stays editable while awaiting the committee, so that state is included too.
+  const assessmentMode = canAssess && ['UNDER_REVIEW', 'STAGE1_PASSED', 'AWAITING_IC_REVIEW'].includes(deal.state)
   // A cost model can be built once the deal is in the pipeline (not a draft).
   const showCostModel = deal.state !== 'DRAFT'
+  // The committee dossier is downloadable once scoring exists.
+  const showReport = showScoring
+  // Screening memo needs finalized Stage 1 gate results; decline letter a terminal decline.
+  const showMemo = ['STAGE1_PASSED', 'AWAITING_IC_REVIEW', 'DECLINED', ...STAGE2_STATES].includes(deal.state)
+  const showDeclineLetter = deal.state === 'DECLINED' || deal.state === 'STAGE2_NO_GO'
 
   const handleTake = async () => {
     setActionError('')
@@ -76,6 +90,31 @@ export function DealDetailPage() {
       await rejectDeal.mutateAsync({ id: id!, reason })
       setRejectOpen(false)
     } catch { setActionError('Could not return deal to BD.') }
+  }
+
+  const handleSubmitForReview = async () => {
+    setActionError('')
+    try { await submitForReview.mutateAsync(id!) }
+    catch { setActionError('Could not submit for committee review — make sure every sub-criterion is scored.') }
+  }
+
+  const handleDownloadReport = async (format: 'pdf' | 'docx') => {
+    setDownloading(format)
+    try { await downloadReport(id!, format, deal.deal_ref) }
+    catch { setActionError('Could not generate the report.') }
+    finally { setDownloading(null) }
+  }
+
+  const handleDownloadDoc = async (kind: 'memo' | 'letter') => {
+    setDocDownloading(kind)
+    try {
+      if (kind === 'memo') await downloadScreeningMemo(id!, deal.deal_ref)
+      else await downloadDeclineLetter(id!, deal.deal_ref)
+    } catch {
+      setActionError(kind === 'memo' ? 'Could not generate the screening memo.' : 'Could not generate the decline letter.')
+    } finally {
+      setDocDownloading(null)
+    }
   }
 
   const handleRequestEdit = async () => {
@@ -104,6 +143,7 @@ export function DealDetailPage() {
               {deal.stage1_decision === 'CONDITIONAL' && !isStage2Decided && (
                 <Badge variant="warning">Conditional</Badge>
               )}
+              <ClassificationBadge deal={deal} />
             </div>
             <p className="text-sm text-muted-foreground">{deal.deal_ref}</p>
           </div>
@@ -143,6 +183,34 @@ export function DealDetailPage() {
               Return to BD
             </Button>
           )}
+
+          {/* Committee report — available once Stage 2 scoring exists */}
+          {showReport && (
+            <>
+              <Button variant="outline" onClick={() => handleDownloadReport('pdf')} disabled={downloading !== null}>
+                <FileText className="mr-2 h-4 w-4" />
+                {downloading === 'pdf' ? 'Preparing…' : 'Report (PDF)'}
+              </Button>
+              <Button variant="outline" onClick={() => handleDownloadReport('docx')} disabled={downloading !== null}>
+                <FileDown className="mr-2 h-4 w-4" />
+                {downloading === 'docx' ? 'Preparing…' : 'Word'}
+              </Button>
+            </>
+          )}
+
+          {/* Stage 1 screening memo & formal decline letter */}
+          {showMemo && (
+            <Button variant="outline" onClick={() => handleDownloadDoc('memo')} disabled={docDownloading !== null}>
+              <FileText className="mr-2 h-4 w-4" />
+              {docDownloading === 'memo' ? 'Preparing…' : 'Screening Memo'}
+            </Button>
+          )}
+          {showDeclineLetter && (
+            <Button variant="outline" onClick={() => handleDownloadDoc('letter')} disabled={docDownloading !== null}>
+              <FileDown className="mr-2 h-4 w-4" />
+              {docDownloading === 'letter' ? 'Preparing…' : 'Decline Letter'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -155,6 +223,13 @@ export function DealDetailPage() {
 
       {actionError && (
         <p className="mb-4 text-sm text-destructive">{actionError}</p>
+      )}
+
+      {/* Pipeline classification (park / nurture / defer) — orthogonal to the state machine */}
+      {(canAssess || deal.classification !== 'ACTIVE') && deal.state !== 'DRAFT' && (
+        <div className="mb-6">
+          <ClassificationPanel deal={deal} canAssess={canAssess} />
+        </div>
       )}
 
       {/* Edit request inline form */}
@@ -211,11 +286,16 @@ export function DealDetailPage() {
           </div>
           <div className="space-y-6 lg:col-span-3">
             {deal.state === 'UNDER_REVIEW' ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <GateAssessment dealId={id!} dealState={deal.state} />
-                </CardContent>
-              </Card>
+              <>
+                <Card>
+                  <CardContent className="pt-6">
+                    <GateAssessment dealId={id!} dealState={deal.state} />
+                  </CardContent>
+                </Card>
+                {/* Framework order: the five pillars follow the gates — visible
+                    as a reference while Stage 1 is still being assessed. */}
+                <PillarMechanics dealId={id!} locked />
+              </>
             ) : (
               /* Stage 1 stays visible & editable while Stage 2 scoring is filled */
               <Tabs defaultValue="scoring">
@@ -229,12 +309,41 @@ export function DealDetailPage() {
                   </CardContent></Card>
                 </TabsContent>
                 <TabsContent value="scoring">
-                  <Card className="mt-4"><CardContent className="pt-6">
-                    <ScoringPanel dealId={id!} editable />
-                  </CardContent></Card>
+                  <div className="mt-4 space-y-4">
+                    <PillarMechanics dealId={id!} defaultOpen={false} />
+                    <Card><CardContent className="pt-6">
+                      <ScoringPanel dealId={id!} editable />
+                    </CardContent></Card>
+                  </div>
                 </TabsContent>
               </Tabs>
             )}
+
+            {/* Hand-off to the Management Investment Committee */}
+            {deal.state === 'STAGE1_PASSED' && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+                <div>
+                  <p className="text-sm font-medium">Ready for the committee?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Submit the completed scoring for the Management Investment Committee's decision.
+                    Details stay editable afterwards.
+                  </p>
+                </div>
+                <Button onClick={handleSubmitForReview} disabled={submitForReview.isPending}>
+                  <Send className="mr-2 h-4 w-4" />
+                  {submitForReview.isPending ? 'Submitting…' : 'Submit for Committee Review'}
+                </Button>
+              </div>
+            )}
+
+            {awaitingCommittee && !canDecideStage2 && (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-5 py-4 text-sm text-indigo-800">
+                Scoring has been submitted and is <strong>awaiting the Management Investment Committee's decision</strong>.
+                You can still revise the intake and scoring until the vote.
+              </div>
+            )}
+
+            {awaitingCommittee && canDecideStage2 && <Stage2DecisionPanel dealId={id!} />}
 
             <Tabs defaultValue="cost">
               <TabsList>
@@ -278,12 +387,18 @@ export function DealDetailPage() {
 
           {showGates && (
             <TabsContent value="gates">
-              <Card className="mt-4">
-                <CardHeader><CardTitle className="text-base">Stage 1 — Knockout Gates</CardTitle></CardHeader>
-                <CardContent>
-                  <GateAssessment dealId={id!} dealState={deal.state} editable={false} />
-                </CardContent>
-              </Card>
+              <div className="mt-4 space-y-4">
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Stage 1 — Knockout Gates</CardTitle></CardHeader>
+                  <CardContent>
+                    <GateAssessment dealId={id!} dealState={deal.state} editable={false} />
+                  </CardContent>
+                </Card>
+                {/* Framework order: the five pillars follow the gates. Once
+                    scoring exists it lives in its own tab; while Stage 1 is
+                    open, show the mechanics reference here. */}
+                {!showScoring && deal.state !== 'DECLINED' && <PillarMechanics dealId={id!} locked />}
+              </div>
             </TabsContent>
           )}
 
@@ -323,9 +438,10 @@ export function DealDetailPage() {
           {showScoring && (
             <TabsContent value="scoring">
               <div className="mt-4 space-y-6">
-                {canDecideStage2 && deal.state === 'STAGE1_PASSED' && (
+                {canDecideStage2 && awaitingCommittee && (
                   <Stage2DecisionPanel dealId={id!} />
                 )}
+                <PillarMechanics dealId={id!} defaultOpen={false} />
                 <Card>
                   <CardHeader><CardTitle className="text-base">Stage 2 — Pillar Scoring</CardTitle></CardHeader>
                   <CardContent>
